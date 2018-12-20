@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/valyala/fasthttp"
 	"log"
+
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -25,14 +26,14 @@ func main() {
 }
 
 // runWorkers - initialize AMQP connections and run background workers
-func runWorkers()  {
+func runWorkers() {
 	connection := Connection{}
 	err := connection.Init("amqp://guest:guest@localhost:5672/", "errors")
 	if err != nil {
 		return
 	}
 
-	go func(conn Connection, ch <- chan Message) {
+	go func(conn Connection, ch <-chan Message) {
 		for msg := range ch {
 			_ = conn.Publish(msg)
 		}
