@@ -11,7 +11,7 @@ type Sender struct {
 }
 
 type Request struct {
-	Token json.RawMessage `json:"token"`
+	Token string `json:"token"`
 	Payload json.RawMessage `json:"payload"`
 	CatcherType string `json:"catcher_type"`
 	Sender Sender `json:"sender"`
@@ -33,7 +33,7 @@ func SendAnswer(ctx *fasthttp.RequestCtx, r Response, status int) {
 }
 
 func (r *Request) Validate () (bool, string) {
-	if r.Token == nil {
+	if r.Token == "" {
 		return false, "Token is empty"
 	}
 	if r.Payload == nil {

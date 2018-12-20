@@ -5,7 +5,6 @@ import (
 	"flag"
 	"github.com/valyala/fasthttp"
 	"log"
-	"time"
 )
 
 var (
@@ -48,7 +47,7 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetContentType("text/json; charset=utf8")
-	log.Printf("[%s]", time.Now().Format("2006-01-02 15:04:05"))
+	log.Printf("%s request from %s", ctx.Method(), ctx.RemoteIP())
 
 	message := &Request{}
 	err := json.Unmarshal(ctx.PostBody(), message)
