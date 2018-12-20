@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
+	"time"
 
 	"github.com/valyala/fasthttp"
 )
@@ -18,7 +19,16 @@ var messagesQueue = make(chan Message)
 func main() {
 	flag.Parse()
 
-	runWorkers()
+	retry := 4
+	res := runWorkers()
+	for (res == false) && (retry > 0) {
+		time.Sleep(time.Second * 3)
+		res = runWorkers()
+		retry--
+	}
+	if !res {
+		log.Fatalf("Could not connect to rabbitmq")
+	}
 
 	if err := fasthttp.ListenAndServe(*addr, requestHandler); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
@@ -26,11 +36,11 @@ func main() {
 }
 
 // runWorkers - initialize AMQP connections and run background workers
-func runWorkers() {
+func runWorkers() bool {
 	connection := Connection{}
-	err := connection.Init("amqp://guest:guest@localhost:5672/", "errors")
+	err := connection.Init("amqp://guest:guest@rabbitmq:5672/", "errors")
 	if err != nil {
-		return
+		return false
 	}
 
 	go func(conn Connection, ch <-chan Message) {
@@ -38,6 +48,7 @@ func runWorkers() {
 			_ = conn.Publish(msg)
 		}
 	}(connection, messagesQueue)
+	return true
 }
 
 // handle HTTP connections and send valid messages to the global queue

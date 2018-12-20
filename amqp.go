@@ -33,13 +33,13 @@ type Message struct {
 func (connection *Connection) Init(url string, exchangeName string) error {
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ (%s): %s", url, err)
+		log.Printf("Failed to connect to RabbitMQ (%s): %s", url, err)
 		return err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open a channel (%s): %s", url, err)
+		log.Printf("Failed to open a channel (%s): %s", url, err)
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (connection *Connection) Init(url string, exchangeName string) error {
 	)
 
 	if err != nil {
-		log.Fatalf("Failed to declare an exchange (%s): %s", url, err)
+		log.Printf("Failed to declare an exchange (%s): %s", url, err)
 		return err
 	}
 

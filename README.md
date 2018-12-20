@@ -83,3 +83,10 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 	}
 }
 ```
+
+# Run in Docker
+
+```
+make docker-build
+make docker-run
+```

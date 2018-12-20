@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+  hawk-catcher:
+    image: 'hawk.catcher'
+    ports:
+      - "3000:3000"
+    links:
+      - rabbitmq
