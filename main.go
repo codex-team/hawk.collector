@@ -1,108 +1,78 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"fmt"
-	"github.com/streadway/amqp"
 	"github.com/valyala/fasthttp"
 	"log"
+	"time"
 )
 
 var (
-	addr     = flag.String("addr", ":8083", "TCP address to listen to")
-	compress = flag.Bool("compress", false, "Whether to enable transparent response compression")
+	addr = flag.String("addr", ":3000", "TCP address to listen to")
 )
 
-type Request struct {
-	Id string `json:"_id"`
-	Type int `json:"type"`
-	Uid string `json:"uid"`
-	Jwt bool `json:"jwt"`
-	Payload string `json:"payload"`
-	Approved bool `json:"approved"`
-}
-
-var messages = make(chan []byte)
+// global messages processing queue
+var messagesQueue = make(chan Message)
 
 func main() {
 	flag.Parse()
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	runWorkers()
 
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	_, err = ch.QueueDeclare(
-		"hello", // name
-		true,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
-
-	h := requestHandler
-	//if *compress {
-	//	h = fasthttp.CompressHandler(h)
-	//}
-
-	go publish(messages, ch)
-
-	if err := fasthttp.ListenAndServe(*addr, h); err != nil {
+	if err := fasthttp.ListenAndServe(*addr, requestHandler); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }
 
+// runWorkers - initialize AMQP connections and run background workers
+func runWorkers()  {
+	connection := Connection{}
+	err := connection.Init("amqp://guest:guest@localhost:5672/", "errors")
+	if err != nil {
+		return
+	}
+
+	go func(conn Connection, ch <- chan Message) {
+		for msg := range ch {
+			_ = conn.Publish(msg)
+		}
+	}(connection, messagesQueue)
+}
+
+// handle HTTP connections and send valid messages to the global queue
 func requestHandler(ctx *fasthttp.RequestCtx) {
 	if string(ctx.Path()) != "/catcher" {
-		ctx.Response.SetStatusCode(fasthttp.StatusBadRequest)
-		return
-	}
-	fmt.Fprintf(ctx, "Hello, world!\n\n")
-
-	//log.Printf("GOT: at %s\n", time.Now().Format("2006-01-02 15:04:05"))
-
-	message := &Request{}
-	err := message.UnmarshalJSON(ctx.PostBody())
-	if err != nil {
-		ctx.Response.SetStatusCode(fasthttp.StatusBadRequest)
-		fmt.Fprintf(ctx, "Invalid JSON!\n\n")
-		return
-	}
-
-	message.Approved = true
-
-	message_bytes, err := message.MarshalJSON()
-	if err != nil {
-		log.Printf("Cannot marshal JSON: %v\n", err)
-		ctx.Response.SetStatusCode(fasthttp.StatusBadRequest)
-		fmt.Fprintf(ctx, "Unknown issue!\n\n")
+		SendAnswer(ctx, Response{true, "Invalid path"}, fasthttp.StatusBadRequest)
 		return
 	}
 
 	ctx.SetContentType("text/json; charset=utf8")
-	messages <- message_bytes
+	log.Printf("[%s]", time.Now().Format("2006-01-02 15:04:05"))
 
+	message := &Request{}
+	err := json.Unmarshal(ctx.PostBody(), message)
+	if err != nil {
+		SendAnswer(ctx, Response{true, "Invalid JSON format"}, fasthttp.StatusBadRequest)
+		return
+	}
+	valid, cause := message.Validate()
+	if !valid {
+		SendAnswer(ctx, Response{true, cause}, fasthttp.StatusBadRequest)
+		return
+	}
+
+	messagesQueue <- Message{minifyJSON(message.Payload), message.CatcherType}
 }
 
-func publish(c <- chan []byte, ch *amqp.Channel)  {
-	for m := range c {
-		err := ch.Publish(
-			"",     // exchange
-			"hello", // routing key
-			false,  // mandatory
-			false,  // immediate
-			amqp.Publishing {
-				DeliveryMode: amqp.Persistent,
-				ContentType: "text/plain",
-				Body:        m,
-			})
-		failOnError(err, "Failed to publish a message")
-	}
+// minifyJSON - Unmarshall JSON and marshall it to remove comments and whitespaces
+func minifyJSON(input json.RawMessage) json.RawMessage {
+	d := &json.RawMessage{}
+	err := json.Unmarshal(input, d)
+	failOnError(err, "Invalid payload JSON")
+	output, err := json.Marshal(d)
+	failOnError(err, "Invalid payload JSON")
+	return output
 }
 
 func failOnError(err error, msg string) {
