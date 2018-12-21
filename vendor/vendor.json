@@ -1,0 +1,61 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "Wpmzsixb0T3cXnI4JS8mMABTeLQ=",
+			"path": "github.com/klauspost/compress/flate",
+			"revision": "30be6041bed523c18e269a700ebd9c2ea9328574",
+			"revisionTime": "2018-11-10T07:24:35Z"
+		},
+		{
+			"checksumSHA1": "kWBC7CTgppTdJFXizt4XkURbyCE=",
+			"path": "github.com/klauspost/compress/gzip",
+			"revision": "30be6041bed523c18e269a700ebd9c2ea9328574",
+			"revisionTime": "2018-11-10T07:24:35Z"
+		},
+		{
+			"checksumSHA1": "KQ77MI2l4iDQE0Z/DiDeO0S963o=",
+			"path": "github.com/klauspost/compress/zlib",
+			"revision": "30be6041bed523c18e269a700ebd9c2ea9328574",
+			"revisionTime": "2018-11-10T07:24:35Z"
+		},
+		{
+			"checksumSHA1": "xEHEfywV/9zZ/nPy/PJBF6xVn1o=",
+			"path": "github.com/klauspost/cpuid",
+			"revision": "c640019ed4bda023bac884990967336803e39e3a",
+			"revisionTime": "2018-11-11T19:45:02Z"
+		},
+		{
+			"checksumSHA1": "JPPv7nnUo01Mlyqb0g+Qk5/URR4=",
+			"path": "github.com/streadway/amqp",
+			"revision": "70e15c650864f4fc47f5d3c82ea117285480895d",
+			"revisionTime": "2018-08-06T23:38:56Z"
+		},
+		{
+			"checksumSHA1": "ua2PK6PDbNCyzxOmakS3BJoF8Co=",
+			"path": "github.com/valyala/bytebufferpool",
+			"revision": "cdfbe9377474227bb42120c1e22fd4433e7f69bf",
+			"revisionTime": "2018-09-05T18:22:47Z"
+		},
+		{
+			"checksumSHA1": "NEMWbZJzj2cSYiO71Gg0EUo539g=",
+			"path": "github.com/valyala/fasthttp",
+			"revision": "62dcd6fdcedcced7ed39ae32df8a96dc1e20e644",
+			"revisionTime": "2018-12-13T15:04:49Z"
+		},
+		{
+			"checksumSHA1": "XUlODEeHXvPDrus/NY1Ah43Yf3I=",
+			"path": "github.com/valyala/fasthttp/fasthttputil",
+			"revision": "62dcd6fdcedcced7ed39ae32df8a96dc1e20e644",
+			"revisionTime": "2018-12-13T15:04:49Z"
+		},
+		{
+			"checksumSHA1": "XXd4XI5F0duiRD/a0SHq2V8hdFM=",
+			"path": "github.com/valyala/fasthttp/stackless",
+			"revision": "62dcd6fdcedcced7ed39ae32df8a96dc1e20e644",
+			"revisionTime": "2018-12-13T15:04:49Z"
+		}
+	],
+	"rootPath": "github.com/codex-team/hawk.catcher"
+}
