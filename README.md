@@ -24,12 +24,14 @@ The following structure represents data got through HTTP request (`POST` request
 
 ## Sender
 Information about sender
+
 | name         | type            | description                                         |
 |--------------|-----------------|-----------------------------------------------------|
 | ip           | string          | Sender IP address                                   |
 
 ## Response
 HTTP response from the catcher. It is provided as JSON with HTTP error code.
+
 | name         | type   | description                                         |
 |--------------|--------|-----------------------------------------------------|
 | error        | bool   | if the error was occurred                           |
