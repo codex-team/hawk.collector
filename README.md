@@ -9,6 +9,50 @@ make
 ./bin/hawk.catcher
 ```
 
+# Data flows
+
+## Request
+
+The following structure represents data got through HTTP request (`POST` request with `Content-Type: application/json`)
+
+| name         | type            | description                                         |
+|--------------|-----------------|-----------------------------------------------------|
+| token        | string (base64) | JWT in base64 format                                |
+| payload      | raw JSON        | Nested valid JSON                                   |
+| catcher_type | string          | Type of the catcher (`errors/golang`, `errors/php`) |
+| sender       | Sender          | Information about sender                            |
+
+## Sender
+Information about sender
+| name         | type            | description                                         |
+|--------------|-----------------|-----------------------------------------------------|
+| ip           | string          | Sender IP address                                   |
+
+## Response
+HTTP response from the catcher. It is provided as JSON with HTTP error code.
+| name         | type   | description                                         |
+|--------------|--------|-----------------------------------------------------|
+| error        | bool   | if the error was occurred                           |
+| message      | string | result details                                      |
+
+For now there are two possible error codes: `200 (OK)` and `400 (Bad request)`.
+
+Examples
+```
+{"error": true, "message": "Token is empty"}
+```
+```
+{"error": true, "message": "Invalid JSON format"}
+```
+
+No body will be returned for the valid response (`200`).
+
+# Message broker
+
+For now we support RabbitMQ as general AQMP broker.
+We declare a durable **exchange** with `errors` name.
+The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcher_type` value.
+
 # Test
 
 Run Hawk.catcher as described in the previous section.
@@ -87,6 +131,5 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 # Run in Docker
 
 ```
-make docker-build
-make docker-run
+make docker
 ```

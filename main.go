@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	addr = flag.String("addr", ":3000", "TCP address to listen to")
+	amqpUrl = flag.String("amqp", "amqp://guest:guest@localhost:5672/", "AMQP connection URL with credentials")
+	addr    = flag.String("addr", ":3000", "TCP address to listen to")
 )
 
 // global messages processing queue
@@ -38,7 +39,7 @@ func main() {
 // runWorkers - initialize AMQP connections and run background workers
 func runWorkers() bool {
 	connection := Connection{}
-	err := connection.Init("amqp://guest:guest@rabbitmq:5672/", "errors")
+	err := connection.Init(*amqpUrl, "errors")
 	if err != nil {
 		return false
 	}

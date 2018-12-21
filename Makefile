@@ -9,3 +9,4 @@ docker-build:
 	docker build -t hawk.catcher -f Dockerfile .
 docker-run:
 	docker-compose up
+docker: docker-build docker-run

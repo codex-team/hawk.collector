@@ -10,5 +10,4 @@ ADD . $GOPATH/src/app
 # should be able to build now
 WORKDIR $GOPATH/src/app
 RUN go build -o hawk.catcher .
-RUN chmod +x ./tools/start.sh
-CMD ["./hawk.catcher"]
+CMD ["./hawk.catcher", "-amqp", "amqp://guest:guest@rabbitmq:5672/"]
