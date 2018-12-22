@@ -79,11 +79,16 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 
 // minifyJSON - Unmarshall JSON and marshall it to remove comments and whitespaces
 func minifyJSON(input json.RawMessage) json.RawMessage {
-	d := &json.RawMessage{}
-	err := json.Unmarshal(input, d)
+
+	// Unmarshall raw JSON to Object
+	inputObject := &json.RawMessage{}
+	err := json.Unmarshal(input, inputObject)
 	failOnError(err, "Invalid payload JSON")
-	output, err := json.Marshal(d)
+
+	// Marshall object to minified raw JSON
+	output, err := json.Marshal(inputObject)
 	failOnError(err, "Invalid payload JSON")
+
 	return output
 }
 

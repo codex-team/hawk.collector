@@ -9,6 +9,12 @@ make
 ./bin/hawk.catcher
 ```
 
+## Run in Docker
+   
+```
+make docker
+```
+
 # Data flows
 
 ## Request
@@ -130,10 +136,4 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
     "source release":""
   }
 }
-```
-
-# Run in Docker
-
-```
-make docker
 ```
