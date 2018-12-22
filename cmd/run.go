@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/codex-team/hawk.catcher/lib/amqp"
 	"github.com/valyala/fasthttp"
 	"log"
 	"net"
@@ -32,4 +33,20 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+// runWorkers - initialize AMQP connections and run background workers
+func runWorkers(config Configuration) bool {
+	connection := amqp.Connection{}
+	err := connection.Init(config.BrokerURL, "errors")
+	if err != nil {
+		return false
+	}
+
+	go func(conn amqp.Connection, ch <-chan amqp.Message) {
+		for msg := range ch {
+			_ = conn.Publish(msg)
+		}
+	}(connection, messagesQueue)
+	return true
 }

@@ -10,22 +10,6 @@ import (
 // global messages processing queue
 var messagesQueue = make(chan amqp.Message)
 
-// runWorkers - initialize AMQP connections and run background workers
-func runWorkers(config Configuration) bool {
-	connection := amqp.Connection{}
-	err := connection.Init(config.BrokerURL, "errors")
-	if err != nil {
-		return false
-	}
-
-	go func(conn amqp.Connection, ch <-chan amqp.Message) {
-		for msg := range ch {
-			_ = conn.Publish(msg)
-		}
-	}(connection, messagesQueue)
-	return true
-}
-
 // handle HTTP connections and send valid messages to the global queue
 func requestHandler(ctx *fasthttp.RequestCtx) {
 	if string(ctx.Path()) != "/catcher" {

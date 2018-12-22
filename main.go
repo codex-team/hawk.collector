@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// Command-line interface options
 var opts struct {
 	Init cmd.InitCommand `command:"init" description:"Initialize server"`
 	Run  cmd.RunCommand  `command:"run" description:"Run server"`
