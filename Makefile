@@ -4,7 +4,7 @@ build:
 check:
 	gometalinter --vendor --fast --enable-gc --tests --aggregate --disable=gotype --disable=gosec .
 lint:
-	golint .
+	golint ./src/...
 docker-build:
 	docker build -t hawk.catcher -f Dockerfile .
 docker-run:

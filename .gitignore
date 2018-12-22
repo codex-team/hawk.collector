@@ -13,3 +13,5 @@
 
 .idea
 venv
+.DS_Store
+hawk.catcher
