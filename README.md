@@ -51,7 +51,7 @@ No body will be returned for the valid response (`200`).
 
 # Message broker
 
-For now we support RabbitMQ as general AQMP broker.
+For now we support RabbitMQ as a general AMQP broker.
 We declare a durable **exchange** with `errors` name.
 The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcher_type` value.
 
@@ -70,63 +70,65 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 
 ```json
 {
-	"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9",
-	"sender": {
-		"ip": "127.0.0.1"
-	},
-	"catcher_type": "errors/golang",
-	"payload": {
-		"title": "Field `blocks` is missing",
-    "timestamp": 1545203808,
-    "severity": 16,
-		"backtrace": [
+  "token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9",
+  "sender":{
+    "ip":"127.0.0.1"
+  },
+  "catcher_type":"errors/golang",
+  "payload":{
+    "title":"Field `blocks` is missing",
+    "timestamp":1545203808,
+    "severity":16,
+    "backtrace":[
       {
-        "file": "/var/www/codex/vendor/codex-team/editor.js/EditorJS/EditorJS.php",
-        "line": 77,
-        "source code": [
+        "file":"/var/www/codex/vendor/codex-team/editor.js/EditorJS/EditorJS.php",
+        "line":77,
+        "source code":[
           {
-            "line number": 76,
-            "content": "         if (!isset($data['blocks'])) {"
+            "line number":76,
+            "content":"         if (!isset($data['blocks'])) {"
           },
           {
-            "line number": 77,
-            "content": "             throw new EditorJSException('Field `blocks` is missing');"
+            "line number":77,
+            "content":"             throw new EditorJSException('Field `blocks` is missing');"
           },
           {
-            "line number": 78,
-            "content": "         }"
+            "line number":78,
+            "content":"         }"
           }
         ]
       },
       {
-        "file": "/var/www/codex/application/classes/Controller/Articles/Index.php",
-        "called line": "191",
-        "source code": [
+        "file":"/var/www/codex/application/classes/Controller/Articles/Index.php",
+        "called line":"191",
+        "source code":[
           {
-            "line number": "190",
-            "content": "     {"
+            "line number":"190",
+            "content":"     {"
           },
           {
-            "line number": "191",
-            "content": "         $editor = new EditorJS($content, Model_Article::getEditorConfig());"
+            "line number":"191",
+            "content":"         $editor = new EditorJS($content, Model_Article::getEditorConfig());"
           },
           {
-            "line number": "192",
-            "content": "         $blocks = $editor->getBlocks();"
+            "line number":"192",
+            "content":"         $blocks = $editor->getBlocks();"
           }
         ]
       }
     ],
-    "get": {
+    "get":{
+
     },
-    "post": {
-      "text": "Hello, World!",
-      "is_published": false
+    "post":{
+      "text":"Hello, World!",
+      "is_published":false
     },
-    "headers": {
+    "headers":{
+
     },
-    "source release": ""
-	}
+    "source release":""
+  }
 }
 ```
 
