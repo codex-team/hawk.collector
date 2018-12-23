@@ -3,7 +3,7 @@ Powerful module that can handle most errors around the web.
 
 # Build and run
 
-Install rabbitMQ manually and build Hawk.catcher
+Install RabbitMQ manually and build Hawk.catcher
 ```
 make
 ./bin/hawk.catcher
@@ -19,7 +19,7 @@ make docker
 
 ## Request
 
-The following structure represents data got through HTTP request (`POST` request with `Content-Type: application/json`)
+The following structure represents data got through the HTTP request (`POST` request with `Content-Type: application/json`)
 
 | name         | type            | description                                         |
 |--------------|-----------------|-----------------------------------------------------|
@@ -36,14 +36,14 @@ Information about sender
 | ip           | string          | Sender IP address                                   |
 
 ## Response
-HTTP response from the catcher. It is provided as JSON with HTTP error code.
+HTTP response from the catcher. It is provided as JSON with HTTP status code.
 
 | name         | type   | description                                         |
 |--------------|--------|-----------------------------------------------------|
 | error        | bool   | if the error was occurred                           |
 | message      | string | result details                                      |
 
-For now there are two possible error codes: `200 (OK)` and `400 (Bad request)`.
+For now there are two possible HTTP status codes: `200 (OK)` and `400 (Bad request)`.
 
 Examples
 ```
