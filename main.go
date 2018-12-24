@@ -44,6 +44,8 @@ func runWorkers() bool {
 		return false
 	}
 
+	// Run background worker which will read message from the channel and process it.
+	// There can be several workers with separate connections to the RabbitMQ
 	go func(conn Connection, ch <-chan Message) {
 		for msg := range ch {
 			_ = conn.Publish(msg)
