@@ -1,1 +1,8 @@
-{"broker_url":"amqp://guest:guest@localhost:5672/","exchange_name":"errors","server_host":"localhost","server_port":3000,"retry_number":5,"retry_interval":3}
+{
+  "broker_url": "amqp://guest:guest@localhost:5672/",
+  "exchange_name": "errors",
+  "server_host": "localhost",
+  "server_port": 3000,
+  "retry_number": 5,
+  "retry_interval": 3
+}
