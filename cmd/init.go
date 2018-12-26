@@ -115,7 +115,7 @@ func (config *Configuration) check() error {
 }
 
 func (config *Configuration) save(filename string) error {
-	configJSON, err := json.Marshal(config)
+	configJSON, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
