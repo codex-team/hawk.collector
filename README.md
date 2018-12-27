@@ -21,7 +21,7 @@ make build-darwin
 or build all
 
 ```bash
-make build-all -j4
+make build-all
 ```
 
 
