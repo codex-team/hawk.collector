@@ -1,30 +1,18 @@
-package cmd
+package server
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/codex-team/hawk.catcher/catcher/configuration"
+
+	"github.com/codex-team/hawk.catcher/catcher/lib"
+
 	"github.com/valyala/fasthttp"
 )
 
-// Sender represents information about message sender
-type Sender struct {
-	IP string `json:"ip"`
-}
-
-// Request represents JSON got from catchers
-type Request struct {
-	Token       string          `json:"token"`
-	Payload     json.RawMessage `json:"payload"`
-	CatcherType string          `json:"catcher_type"`
-	Sender      Sender          `json:"sender"`
-}
-
-// Response represents JSON answer to the catcher
-type Response struct {
-	Error   bool   `json:"error"`
-	Message string `json:"message"`
-}
+// global messages processing queue
+var messagesQueue = make(chan lib.Message)
 
 // SendAnswer – send HTTP response to the client
 //
@@ -60,4 +48,20 @@ func (r *Request) Validate() (bool, string) {
 		return false, "Sender is empty"
 	}
 	return true, ""
+}
+
+// RunWorkers - initialize AMQP connections and run background workers
+func RunWorkers(config configuration.Configuration) bool {
+	connection := lib.Connection{}
+	err := connection.Init(config.BrokerURL, "errors")
+	if err != nil {
+		return false
+	}
+
+	go func(conn lib.Connection, ch <-chan lib.Message) {
+		for msg := range ch {
+			_ = conn.Publish(msg)
+		}
+	}(connection, messagesQueue)
+	return true
 }

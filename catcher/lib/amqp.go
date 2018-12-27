@@ -1,4 +1,4 @@
-package amqp
+package lib
 
 import (
 	"log"
