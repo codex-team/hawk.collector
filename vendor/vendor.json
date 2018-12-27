@@ -15,6 +15,26 @@
 			"revisionTime": "2018-12-18T13:20:04Z"
 		},
 		{
+			"path": "github.com/codex-team/hawk.catcher/catcher",
+			"revision": ""
+		},
+		{
+			"path": "github.com/codex-team/hawk.catcher/catcher/cmd",
+			"revision": ""
+		},
+		{
+			"path": "github.com/codex-team/hawk.catcher/catcher/configuration",
+			"revision": ""
+		},
+		{
+			"path": "github.com/codex-team/hawk.catcher/catcher/lib",
+			"revision": ""
+		},
+		{
+			"path": "github.com/codex-team/hawk.catcher/catcher/server",
+			"revision": ""
+		},
+		{
 			"path": "github.com/codex-team/hawk.catcher/cmd",
 			"revision": ""
 		},
