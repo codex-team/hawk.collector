@@ -24,10 +24,15 @@ or build all
 make build-all
 ```
 
+## Import RabbitMQ definitions
+
+```bash
+rabbitmqadmin import config/rabbit.definitions.json
+```
 
 ## Run in Docker
-   
-```
+
+```bash
 make docker
 ```
 
