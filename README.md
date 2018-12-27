@@ -4,10 +4,26 @@ Powerful module that can handle most errors around the web.
 # Build and run
 
 Install RabbitMQ manually and build Hawk.catcher
-```
+
+```bash
 make
 ./bin/hawk.catcher
 ```
+
+## Build for specific os
+
+```bash
+make build-linux
+make build-windows
+make build-darwin
+```
+
+or build all
+
+```bash
+make build-all -j4
+```
+
 
 ## Run in Docker
    
@@ -22,7 +38,7 @@ make docker
 The following structure represents data got through the HTTP request (`POST` request with `Content-Type: application/json`)
 
 | name         | type            | description                                         |
-|--------------|-----------------|-----------------------------------------------------|
+| ------------ | --------------- | --------------------------------------------------- |
 | token        | string (base64) | JWT in base64 format                                |
 | payload      | raw JSON        | Nested valid JSON                                   |
 | catcher_type | string          | Type of the catcher (`errors/golang`, `errors/php`) |
@@ -31,17 +47,17 @@ The following structure represents data got through the HTTP request (`POST` req
 ## Sender
 Information about sender
 
-| name         | type            | description                                         |
-|--------------|-----------------|-----------------------------------------------------|
-| ip           | string          | Sender IP address                                   |
+| name | type   | description       |
+| ---- | ------ | ----------------- |
+| ip   | string | Sender IP address |
 
 ## Response
 HTTP response from the catcher. It is provided as JSON with HTTP status code.
 
-| name         | type   | description                                         |
-|--------------|--------|-----------------------------------------------------|
-| error        | bool   | if the error was occurred                           |
-| message      | string | result details                                      |
+| name    | type   | description               |
+| ------- | ------ | ------------------------- |
+| error   | bool   | if the error was occurred |
+| message | string | result details            |
 
 For now there are two possible HTTP status codes: `200 (OK)` and `400 (Bad request)`.
 
