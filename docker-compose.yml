@@ -1,14 +1,22 @@
-version: '2'
+version: "3"
 
 services:
   rabbitmq:
-    image: 'rabbitmq:3-management'
+    image: "rabbitmq:3-management"
     ports:
       - "15672:15672"
       - "5672:5672"
+    volumes:
+      - $PWD/config/rabbit.definitions.json:/tmp/rabbit.definitions.json:ro
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/tmp/rabbit.definitions.json"
+
   hawk-catcher:
-    image: 'hawk.catcher'
+    image: "hawk.catcher"
+    build: .
     ports:
       - "3000:3000"
-    links:
+    volumes:
+      - $PWD/docker-config.json:/app/docker-config.json:ro
+    depends_on:
       - rabbitmq
