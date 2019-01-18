@@ -17,6 +17,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - $PWD/docker-config.json:/app/docker-config.json:ro
+      - $PWD/tests/docker-config.json:/app/docker-config.json:ro
     depends_on:
       - rabbitmq
