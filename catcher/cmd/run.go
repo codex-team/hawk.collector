@@ -5,6 +5,7 @@ import (
 	"github.com/codex-team/hawk.catcher/catcher/server"
 	"log"
 	"net"
+	"time"
 
 	"github.com/codex-team/hawk.catcher/catcher/configuration"
 
@@ -20,19 +21,19 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	// Try to connect to the Queue server several times until success or out of RetryNumber
-	//retry := config.RetryNumber
-	//connection, err := server.Connect(*config)
-	//for (err != nil) && (retry > 0) {
-	//	time.Sleep(time.Second * time.Duration(config.RetryInterval))
-	//	connection, err = server.Connect(*config)
-	//	retry--
-	//}
-	//if err != nil {
-	//	log.Fatalf("Could not connect to the queue server")
-	//}
+	retry := config.RetryNumber
+	connection, err := server.Connect(*config)
+	for (err != nil) && (retry > 0) {
+		time.Sleep(time.Second * time.Duration(config.RetryInterval))
+		connection, err = server.Connect(*config)
+		retry--
+	}
+	if err != nil {
+		log.Fatalf("Could not connect to the queue server")
+	}
 
 	// Run background workers
-	//server.RunWorkers(connection, *config)
+	server.RunWorkers(connection, *config)
 
 	// Run HTTP server and block execution
 	if err := fasthttp.ListenAndServe(net.JoinHostPort(config.Host, fmt.Sprintf("%d", config.Port)), server.RequestHandler); err != nil {
