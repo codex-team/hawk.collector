@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="hawk.js" async></script>
+    <script>
+        window.addEventListener("load", function(evt) {
+            hawk.init({
+                host: 'localhost',
+                port: '3000',
+                path: "ws",
+                secure: false,
+                token: 'INTEGRATION_TOKEN'
+            });
+            throw new Error('Whoops!');
+        });
+    </script>
+</head>
+</html>
