@@ -5,9 +5,14 @@ Powerful module that can handle most errors around the web.
 
 Install RabbitMQ manually and build Hawk.catcher
 
+Before build enter the working directory
+```bash
+cd ./catcher
+```
+
 ```bash
 make
-./bin/hawk.catcher
+./catcher/bin/hawk.catcher
 ```
 
 ## Build for specific os
