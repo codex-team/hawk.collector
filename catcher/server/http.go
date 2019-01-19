@@ -2,12 +2,16 @@ package server
 
 import (
 	"encoding/json"
-	"log"
-
 	"github.com/codex-team/hawk.catcher/catcher/lib"
-
 	"github.com/valyala/fasthttp"
+	"log"
+	"github.com/fasthttp/websocket"
 )
+
+var upgrader = websocket.FastHTTPUpgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 // Response represents JSON answer from the HTTP server
 type Response struct {
@@ -20,11 +24,24 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("text/json; charset=utf8")
 
 	// Process only valid HTTP requests to the '/catcher' URI
-	if string(ctx.Path()) != "/catcher" {
+	//if string(ctx.Path()) != "/catcher" {
+	//	SendAnswer(ctx, Response{true, "Invalid path"}, fasthttp.StatusBadRequest)
+	//	return
+	//}
+
+	switch string(ctx.Path()) {
+	case "/catcher", "/catcher/":
+		catcherHTTPHandler(ctx)
+	case "/ws", "/ws/":
+		catcherWebsocketsHandler(ctx)
+	default:
 		SendAnswer(ctx, Response{true, "Invalid path"}, fasthttp.StatusBadRequest)
 		return
 	}
 
+}
+
+func catcherHTTPHandler(ctx *fasthttp.RequestCtx) {
 	log.Printf("%s request from %s", ctx.Method(), ctx.RemoteIP())
 
 	// Check if Request POST body is valid JSON with the Message structure
@@ -50,4 +67,24 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	messagesQueue <- lib.Message{minifiedJSON, message.CatcherType}
+}
+
+func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx)  {
+	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
+		mt, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			return
+		}
+		log.Printf("recv: %s", message)
+		err = conn.WriteMessage(mt, message)
+		if err != nil {
+			log.Println("write:", err)
+			return
+		}
+	})
+
+	if err != nil {
+		log.Println(err)
+	}
 }
