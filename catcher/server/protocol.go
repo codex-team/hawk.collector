@@ -44,9 +44,6 @@ func (r *Request) Validate() (bool, string) {
 	if r.CatcherType == "" {
 		return false, "CatcherType is empty"
 	}
-	if r.Sender.IP == "" {
-		return false, "Sender is empty"
-	}
 	return true, ""
 }
 
