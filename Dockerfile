@@ -1,23 +1,24 @@
-FROM golang:alpine as builder
-ARG GOPATH=/go
+FROM golang:stretch as builder
+ARG BUILD_DIRECTORY=/build
 
+# enable go modules
+ENV GO111MODULE=on
+ENV CGO_ENABLED=0
 
-ENV GOPATH=$GOPATH
-ENV PATH=$GOPATH/bin:$PATH
-
-# now copy your app to the proper build path
-RUN mkdir -p $GOPATH/src/github.com/codex-team/hawk.catcher
-ADD . $GOPATH/src/github.com/codex-team/hawk.catcher
+# now copy your app to the build path
+RUN mkdir $BUILD_DIRECTORY
+ADD ./catcher $BUILD_DIRECTORY
 
 # should be able to build now
-WORKDIR $GOPATH/src/github.com/codex-team/hawk.catcher
-RUN go build -o hawk.catcher -v ./catcher
+WORKDIR $BUILD_DIRECTORY
+RUN go build -o hawk.catcher .
 
 FROM alpine
-ARG GOPATH=/go
+ARG BUILD_DIRECTORY=/build
 
 WORKDIR /app
-COPY --from=builder $GOPATH/src/github.com/codex-team/hawk.catcher .
+COPY --from=builder $BUILD_DIRECTORY .
+COPY ./tests/docker-config.json .
 
 EXPOSE 3000
-CMD ["./hawk.catcher", "run", "-C", "tests/docker-config.json"]
+CMD ["./hawk.catcher", "run", "-C", "docker-config.json"]
