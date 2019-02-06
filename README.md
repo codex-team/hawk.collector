@@ -1,4 +1,6 @@
 # hawk.catcher
+[![Go Report Card](https://goreportcard.com/badge/github.com/codex-team/hawk.catcher)](https://goreportcard.com/report/github.com/codex-team/hawk.catcher)
+
 Powerful module that can handle most errors around the web.
 
 # Build and run
