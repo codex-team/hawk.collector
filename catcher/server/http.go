@@ -28,7 +28,7 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("text/json; charset=utf8")
 
 	switch string(ctx.Path()) {
-	case "/catcher", "/catcher/":
+	case "/":
 		catcherHTTPHandler(ctx)
 	case "/ws", "/ws/":
 		catcherWebsocketsHandler(ctx)
@@ -70,18 +70,21 @@ func catcherHTTPHandler(ctx *fasthttp.RequestCtx) {
 
 func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx)  {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
-		mt, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			return
-		}
-		log.Printf("recv: %s", message)
+		for {
+			mt, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("read message error:", err)
+				break
+			}
+			log.Printf("recv: %s", message)
 
-		answerBuffer := []byte(processMessage(message).Message)
-		err = conn.WriteMessage(mt, answerBuffer)
-		if err != nil {
-			log.Println("write:", err)
-			return
+			answerBuffer := []byte(processMessage(message).Message)
+			err = conn.WriteMessage(mt, answerBuffer)
+
+			if err != nil {
+				log.Println("write message error:", err)
+				break
+			}
 		}
 	})
 

@@ -2,9 +2,8 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <script src="hawk.js" async></script>
+    <script src="hawk.js"></script>
     <script>
-        window.addEventListener("load", function(evt) {
             hawk.init({
                 host: 'localhost',
                 port: '3000',
@@ -12,8 +11,11 @@
                 secure: false,
                 token: 'INTEGRATION_TOKEN'
             });
-            throw new Error('Whoops!');
-        });
+            setTimeout(function () {
+                setTimeout(function () {
+                    throw new Error(Date.now());
+                }, 100);
+            }, 3000);
     </script>
 </head>
 </html>
