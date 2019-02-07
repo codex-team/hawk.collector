@@ -19,8 +19,8 @@ type Response struct {
 func RequestHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("text/json; charset=utf8")
 
-	// Process only valid HTTP requests to the '/catcher' URI
-	if string(ctx.Path()) != "/catcher" {
+	// Process only valid HTTP requests to the '/' URI
+	if string(ctx.Path()) != "/" {
 		SendAnswer(ctx, Response{true, "Invalid path"}, fasthttp.StatusBadRequest)
 		return
 	}

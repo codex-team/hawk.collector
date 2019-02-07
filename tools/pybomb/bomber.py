@@ -23,7 +23,7 @@ async def bound_fetch(sem, url, session):
 
 
 async def run(r):
-    url = "http://localhost:3000/catcher"
+    url = "http://localhost:3000/"
     tasks = []
     # create instance of Semaphore
     sem = asyncio.Semaphore(50)
