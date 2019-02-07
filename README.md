@@ -100,7 +100,7 @@ pip install -r tools/requirements.txt
 python3 tools/bomber.py
 ```
 
-You can also send requests manually via insomnia or cURL to the `http://localhost:3000/catcher` with the following JSON body.
+You can also send requests manually via insomnia or cURL to the `http://localhost:3000/` with the following JSON body.
 
 ```json
 {
