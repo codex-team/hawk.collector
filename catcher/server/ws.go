@@ -1,11 +1,15 @@
+// WebSocket manipulation primitives
+
 package server
 
 import (
+	"log"
+
 	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
-	"log"
 )
 
+// WebSocket upgrader options
 var upgrader = websocket.FastHTTPUpgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -14,7 +18,8 @@ var upgrader = websocket.FastHTTPUpgrader{
 	},
 }
 
-func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx)  {
+// catcherWebsocketsHandler upgrades HTTP request to WebSocket connection
+func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		for {
 			mt, message, err := conn.ReadMessage()
