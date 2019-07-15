@@ -1,15 +1,16 @@
 package server
 
 import (
-	"github.com/valyala/fasthttp"
 	"log"
+
+	"github.com/valyala/fasthttp"
 )
 
 // Response represents JSON answer from the HTTP server
 type Response struct {
 	Error   bool   `json:"error"`
 	Message string `json:"message"`
-	Status int  `json:"status"`
+	Status  int    `json:"status"`
 }
 
 // RequestHandler - handle connections and send valid messages to the global queue
@@ -27,6 +28,7 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 
 }
 
+// catcherHTTPHandler processes HTTP requests
 func catcherHTTPHandler(ctx *fasthttp.RequestCtx) {
 	log.Printf("%s request from %s", ctx.Method(), ctx.RemoteIP())
 	SendAnswer(ctx, processMessage(ctx.PostBody()))

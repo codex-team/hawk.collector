@@ -18,7 +18,7 @@ var upgrader = websocket.FastHTTPUpgrader{
 	},
 }
 
-// catcherWebsocketsHandler upgrades HTTP request to WebSocket connection
+// catcherWebsocketsHandler handles WebSocket connection
 func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		for {
