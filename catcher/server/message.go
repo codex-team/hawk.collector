@@ -15,6 +15,7 @@ type Request struct {
 	CatcherType string          `json:"catcher_type"`
 }
 
+// Message represents structure sent to message queue
 type Message struct {
 	Token   string          `json:"token"`
 	Payload json.RawMessage `json:"payload"`
