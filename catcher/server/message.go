@@ -37,6 +37,6 @@ func processMessage(body []byte) Response {
 		return Response{true, "Server error", fasthttp.StatusInternalServerError}
 	}
 
-	messagesQueue <- lib.Message{minifiedJSON, message.CatcherType}
+	messagesQueue <- lib.Message{Payload: minifiedJSON, Route: message.CatcherType}
 	return Response{false, "OK", fasthttp.StatusOK}
 }
