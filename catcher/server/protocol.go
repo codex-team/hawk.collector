@@ -19,8 +19,8 @@ var messagesQueue = make(chan lib.Message)
 // ctx – HTTP context
 // r – Response structure that will be serialized and send as HTTP body
 // status – HTTP status code
-func SendAnswer(ctx *fasthttp.RequestCtx, r Response, status int) {
-	ctx.Response.SetStatusCode(status)
+func SendAnswer(ctx *fasthttp.RequestCtx, r Response) {
+	ctx.Response.SetStatusCode(r.Status)
 
 	response, err := json.Marshal(r)
 	failOnError(err, "Cannot marshall response")

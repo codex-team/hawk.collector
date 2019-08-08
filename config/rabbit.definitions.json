@@ -19,7 +19,8 @@
     { "name": "errors/nodejs", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
     { "name": "errors/client", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
     { "name": "errors/php", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
-    { "name": "errors/python", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
+    { "name": "errors/python", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "errors/javascript", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
   ],
   "exchanges": [
     {
@@ -71,6 +72,14 @@
       "destination": "errors/python",
       "destination_type": "queue",
       "routing_key": "errors/python",
+      "arguments": {}
+    },
+    {
+      "source": "errors",
+      "vhost": "/",
+      "destination": "errors/javascript",
+      "destination_type": "queue",
+      "routing_key": "errors/javascript",
       "arguments": {}
     }
   ]

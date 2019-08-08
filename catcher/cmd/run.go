@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/codex-team/hawk.catcher/catcher/server"
 	"log"
 	"net"
 	"time"
-
-	"github.com/codex-team/hawk.catcher/catcher/server"
 
 	"github.com/codex-team/hawk.catcher/catcher/configuration"
 
