@@ -22,7 +22,7 @@ var upgrader = websocket.FastHTTPUpgrader{
 func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		for {
-			mt, message, err := conn.ReadMessage()
+			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				log.Println("read message error:", err)
 				break
@@ -31,7 +31,7 @@ func catcherWebsocketsHandler(ctx *fasthttp.RequestCtx) {
 			log.Printf("recv: %s", message)
 
 			answerBuffer := []byte(processMessage(message).Message)
-			err = conn.WriteMessage(mt, answerBuffer)
+			err = conn.WriteMessage(messageType, answerBuffer)
 
 			if err != nil {
 				log.Println("write message error:", err)
