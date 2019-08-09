@@ -22,8 +22,8 @@ func TestValidProcessMessage(t *testing.T) {
 	response := processMessage(body)
 
 	wg.Wait()
-	assert.Equal(t, <-msg, lib.Message{expectedPayload, "errors/golang"})
-	assert.Equal(t, response, Response{false, "OK", 200})
+	assert.Equal(t, <-msg, lib.Message{Payload: expectedPayload, Route: "errors/golang"})
+	assert.Equal(t, response, Response{Error: false, Message: "OK", Status: 200})
 }
 
 func TestInvalidProcessMessage(t *testing.T) {
