@@ -38,9 +38,6 @@ func (r *Request) Validate() (bool, string) {
 	if r.Token == "" {
 		return false, "Token is empty"
 	}
-	if r.Payload == nil {
-		return false, "Payload is empty"
-	}
 	if r.CatcherType == "" {
 		return false, "CatcherType is empty"
 	}

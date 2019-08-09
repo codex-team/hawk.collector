@@ -12,7 +12,7 @@ require (
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/streadway/amqp v0.0.0-20181205114330-a314942b2fd9
-	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/stretchr/testify v1.3.0
 	github.com/valyala/fasthttp v1.1.0
 	golang.org/x/crypto v0.0.0-20190103213133-ff983b9c42bc // indirect
 	golang.org/x/sys v0.0.0-20190116161447-11f53e031339 // indirect
