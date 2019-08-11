@@ -7,7 +7,7 @@ services:
       - "15672:15672"
       - "5672:5672"
     volumes:
-      - $PWD/config/rabbit.definitions.json:/tmp/rabbit.definitions.json:ro
+      - ./config/rabbit.definitions.json:/tmp/rabbit.definitions.json:ro
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/tmp/rabbit.definitions.json"
 
@@ -17,6 +17,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - $PWD/tests/docker-config.json:/app/docker-config.json:ro
+      - ./tests/docker-config.json:/app/docker-config.json:ro
     depends_on:
       - rabbitmq
