@@ -11,6 +11,8 @@ build:
 	go build -o $(BINARY_NAME) -v ./
 check:
 	gometalinter --vendor --fast --enable-gc --tests --aggregate --disable=gotype --disable=gosec ./
+test:
+	go test ./...
 lint:
 	golint cmd/... lib/... ./
 clean:
