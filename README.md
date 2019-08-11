@@ -1,22 +1,22 @@
-# hawk.catcher
+# hawk.collector
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/codex-team/hawk.catcher)](https://goreportcard.com/report/github.com/codex-team/hawk.catcher)
+[![Go Report Card](https://goreportcard.com/badge/github.com/codex-team/hawk.collector)](https://goreportcard.com/report/github.com/codex-team/hawk.collector)
 
 Powerful module that can handle most errors around the web.
 
 # Build and run
 
-Install RabbitMQ manually and build Hawk.catcher
+Install RabbitMQ manually and build Hawk.collector
 
 Before build enter the working directory
 
 ```bash
-cd ./catcher
+cd ./collector
 ```
 
 ```bash
 make
-./catcher/bin/hawk.catcher
+./collector/bin/hawk.collector
 ```
 
 ## Build for specific os
@@ -55,7 +55,7 @@ The following structure represents data got through the HTTP request (`POST` req
 | ------------ | --------------- | --------------------------------------------------- |
 | token        | string (base64) | JWT in base64 format                                |
 | payload      | raw JSON        | Nested valid JSON                                   |
-| catcher_type | string          | Type of the catcher (`errors/golang`, `errors/php`) |
+| catcherType  | string          | Type of the catcher (`errors/golang`, `errors/php`) |
 | sender       | Sender          | Information about sender                            |
 
 ## Sender
@@ -93,11 +93,11 @@ No body will be returned for the valid response (`200`).
 
 For now we support RabbitMQ as a general AMQP broker.
 We declare a durable **exchange** with `errors` name.
-The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcher_type` value.
+The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcherType` value.
 
 # Test
 
-Run Hawk.catcher as described in the previous section.
+Run Hawk.collector as described in the previous section.
 Run load tests
 
 ```python
@@ -115,7 +115,7 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
   "sender": {
     "ip": "127.0.0.1"
   },
-  "catcher_type": "errors/golang",
+  "catcherType": "errors/golang",
   "payload": {
     "title": "Field `blocks` is missing",
     "timestamp": 1545203808,
@@ -171,6 +171,6 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 
 ## WebSocket testing
 
-- Run catcher
+- Run collector
 - Open `tools/jsbomb/index.html` in browser
 - Watch logs

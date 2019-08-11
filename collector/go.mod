@@ -1,4 +1,4 @@
-module github.com/codex-team/hawk.catcher/catcher
+module github.com/codex-team/hawk.collector/collector
 
 require (
 	github.com/AlecAivazis/survey v1.8.0

@@ -1,4 +1,4 @@
-DOCKER_IMAGE=hawk.catcher
+DOCKER_IMAGE=hawk.collector
 
 docker: docker-build docker-run
 

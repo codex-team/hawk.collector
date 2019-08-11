@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/codex-team/hawk.catcher/catcher/lib"
+	"github.com/codex-team/hawk.collector/collector/lib"
 	"github.com/valyala/fasthttp"
 )
 

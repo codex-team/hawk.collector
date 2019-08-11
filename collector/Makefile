@@ -1,4 +1,4 @@
-BINARY_NAME=bin/hawk.catcher
+BINARY_NAME=bin/hawk.collector
 BINARY_NAME_LINUX=$(BINARY_NAME)-linux
 BINARY_NAME_WINDOWS=$(BINARY_NAME)-windows.exe
 BINARY_NAME_DARWIN=$(BINARY_NAME)-darwin

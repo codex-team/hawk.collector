@@ -11,8 +11,8 @@ services:
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/tmp/rabbit.definitions.json"
 
-  hawk-catcher:
-    image: "hawk.catcher"
+  hawk-collector:
+    image: "hawk.collector"
     build: .
     ports:
       - "3000:3000"

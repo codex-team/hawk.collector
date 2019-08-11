@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/codex-team/hawk.catcher/catcher/configuration"
+	"github.com/codex-team/hawk.collector/collector/configuration"
 
 	"github.com/AlecAivazis/survey"
 )

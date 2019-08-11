@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 	"sync"
-	"github.com/codex-team/hawk.catcher/catcher/lib"
+	"github.com/codex-team/hawk.collector/collector/lib"
 	"github.com/stretchr/testify/assert"
 )
 
