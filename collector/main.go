@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/codex-team/hawk.catcher/catcher/cmd"
+	"github.com/codex-team/hawk.collector/collector/cmd"
 
 	"github.com/jessevdk/go-flags"
 )

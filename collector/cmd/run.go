@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/codex-team/hawk.catcher/catcher/server"
+	"github.com/codex-team/hawk.collector/collector/server"
 	"log"
 	"net"
 	"time"
 
-	"github.com/codex-team/hawk.catcher/catcher/configuration"
+	"github.com/codex-team/hawk.collector/collector/configuration"
 
 	"github.com/valyala/fasthttp"
 )

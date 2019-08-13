@@ -1,4 +1,4 @@
-BINARY_NAME=bin/hawk.catcher
+BINARY_NAME=bin/hawk.collector
 BINARY_NAME_LINUX=$(BINARY_NAME)-linux
 BINARY_NAME_WINDOWS=$(BINARY_NAME)-windows.exe
 BINARY_NAME_DARWIN=$(BINARY_NAME)-darwin
@@ -11,6 +11,8 @@ build:
 	go build -o $(BINARY_NAME) -v ./
 check:
 	gometalinter --vendor --fast --enable-gc --tests --aggregate --disable=gotype --disable=gosec ./
+test:
+	go test ./...
 lint:
 	golint cmd/... lib/... ./
 clean:
