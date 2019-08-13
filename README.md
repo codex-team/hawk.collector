@@ -68,7 +68,7 @@ Information about sender
 
 ## Response
 
-HTTP response from the catcher. It is provided as JSON with HTTP status code.
+HTTP response from the collector. It is provided as JSON with HTTP status code.
 
 | name    | type   | description               |
 | ------- | ------ | ------------------------- |
