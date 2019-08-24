@@ -5,12 +5,17 @@ ARG BUILD_DIRECTORY=/build
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 
-# now copy your app to the build path
+# now copy go.mod and go.sum to the build path
 RUN mkdir $BUILD_DIRECTORY
-ADD ./collector $BUILD_DIRECTORY
+COPY ./collector/go.mod $BUILD_DIRECTORY
+COPY ./collector/go.sum $BUILD_DIRECTORY
 
-# should be able to build now
+# download modules (for fast build due to docker caching)
 WORKDIR $BUILD_DIRECTORY
+RUN go mod download
+
+# copy app sources and build
+ADD ./collector $BUILD_DIRECTORY
 RUN go build -o hawk.collector .
 
 FROM alpine
