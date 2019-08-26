@@ -39,9 +39,9 @@ func catcherHTTPHandler(ctx *fasthttp.RequestCtx) {
 func sourcemapUploadHandler(ctx *fasthttp.RequestCtx) {
 	log.Printf("%s sourcemapUploadHandler request from %s", ctx.Method(), ctx.RemoteIP())
 
-	token := ctx.Request.Header.Peek("Authentication")
+	token := ctx.Request.Header.Peek("Authorization")
 	if len(token) == 0 {
-		SendAnswer(ctx, Response{true, "Provide Authentication header", fasthttp.StatusBadRequest})
+		SendAnswer(ctx, Response{true, "Provide Authorization header", fasthttp.StatusBadRequest})
 	}
 
 	form, err := ctx.MultipartForm()
