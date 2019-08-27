@@ -47,9 +47,9 @@ make docker
 
 # Data flows
 
-## Request
+## Request from error catcher
 
-The following structure represents data got through the HTTP request (`POST` request with `Content-Type: application/json`)
+The following structure represents data got through the HTTP request (`POST` request to `'/'` with `Content-Type: application/json`)
 
 | name         | type            | description                                         |
 | ------------ | --------------- | --------------------------------------------------- |
@@ -58,16 +58,23 @@ The following structure represents data got through the HTTP request (`POST` req
 | catcherType  | string          | Type of the catcher (`errors/golang`, `errors/php`) |
 | sender       | Sender          | Information about sender                            |
 
-## Sender
+## Request to upload sourcemap
 
-Information about sender
+The following structure represents data got through the HTTP request (`POST` request to `'/sourcemap'` with `Content-Type: multipart/form-data`)
 
-| name | type   | description       |
-| ---- | ------ | ----------------- |
-| ip   | string | Sender IP address |
+```
+curl -F release="1.0.1" -F secret=@"sourcemap.js" -H "Authorization: Bearer Q29kZVggdGVhbQo=" http://localhost:3000/sourcemap
+```
 
-## Response
+### Form values
+| name         | type            | description                                         |
+| ------------ | --------------- | --------------------------------------------------- |
+| release      | string          | Release name                                        |
 
+### Form files
+Set of files with filenames encoded with [multipart/form-data](https://tools.ietf.org/html/rfc2388)
+
+## Response message
 HTTP response from the collector. It is provided as JSON with HTTP status code.
 
 | name    | type   | description               |
@@ -89,11 +96,13 @@ Examples
 
 No body will be returned for the valid response (`200`).
 
+
 # Message broker
 
 For now we support RabbitMQ as a general AMQP broker.
 We declare a durable **exchange** with `errors` name.
 The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcherType` value.
+
 
 # Test
 
