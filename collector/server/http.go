@@ -20,6 +20,8 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 	switch string(ctx.Path()) {
 	case "/":
 		catcherHTTPHandler(ctx)
+	case "/sourcemap":
+		sourcemapUploadHandler(ctx)
 	case "/ws", "/ws/":
 		catcherWebsocketsHandler(ctx)
 	default:
@@ -28,8 +30,8 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 
 }
 
-// catcherHTTPHandler processes HTTP requests
+// catcherHTTPHandler processes HTTP requests with JSON body
 func catcherHTTPHandler(ctx *fasthttp.RequestCtx) {
-	log.Printf("%s request from %s", ctx.Method(), ctx.RemoteIP())
+	log.Printf("%s catcherHTTPHandler request from %s", ctx.Method(), ctx.RemoteIP())
 	SendAnswer(ctx, processMessage(ctx.PostBody()))
 }
