@@ -63,7 +63,7 @@ The following structure represents data got through the HTTP request (`POST` req
 The following structure represents data got through the HTTP request (`POST` request to `'/sourcemap'` with `Content-Type: multipart/form-data`)
 
 ```
-curl -F release="1.0.1" -F secret=@"sourcemap.js" -H "Authorization: Bearer Q29kZVggdGVhbQo=" http://localhost:3000/sourcemap
+curl -F release="1.0.1" -F file=@"sourcemap.js" -H "Authorization: Bearer Q29kZVggdGVhbQo=" http://localhost:3000/sourcemap
 ```
 
 ### Form values
