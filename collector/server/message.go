@@ -17,8 +17,8 @@ type Request struct {
 
 // Message represents structure sent to message queue
 type Message struct {
-	Token   string          `json:"token"`
-	Payload json.RawMessage `json:"payload"`
+	ProjectId string          `json:"projectId"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 // processMessage validates body, sends it to queue and return http response
@@ -31,7 +31,7 @@ func processMessage(body []byte) Response {
 	}
 
 	// Validate Message data
-	valid, cause := message.Validate()
+	valid, projectId, cause := message.DecodeJWT()
 	if !valid {
 		return Response{true, cause, fasthttp.StatusBadRequest}
 	}
@@ -44,7 +44,7 @@ func processMessage(body []byte) Response {
 	}
 
 	// Create message instance
-	messageToSend := Message{Token: message.Token, Payload: minifiedPayload}
+	messageToSend := Message{ProjectId: projectId, Payload: minifiedPayload}
 
 	// Marshal JSON to string to send to queue
 	minifiedMessage, err := json.Marshal(messageToSend)

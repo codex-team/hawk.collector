@@ -7,12 +7,13 @@ import (
 
 // Configuration parameters to connect to the queue
 type Configuration struct {
-	BrokerURL     string `json:"broker_url"`
-	Exchange      string `json:"exchange_name"`
-	Host          string `json:"server_host"`
-	Port          int    `json:"server_port"`
-	RetryNumber   int    `json:"retry_number"`
-	RetryInterval uint   `json:"retry_interval"`
+	BrokerURL     string `json:"brokerUrl"`
+	Exchange      string `json:"exchangeName"`
+	Host          string `json:"serverHost"`
+	Port          int    `json:"serverPort"`
+	RetryNumber   int    `json:"retryNumber"`
+	RetryInterval uint   `json:"retryInterval"`
+	JwtSecret     string `json:"jwtSecret"`
 }
 
 // Load - load configuration from the file specified
