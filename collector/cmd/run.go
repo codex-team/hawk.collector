@@ -1,31 +1,36 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/codex-team/hawk.collector/collector/server"
 	"log"
-	"net"
 	"time"
 
-	"github.com/codex-team/hawk.collector/collector/configuration"
-
-	"github.com/valyala/fasthttp"
+	"github.com/caarlos0/env"
+	"github.com/codex-team/hawk.collector/collector/server"
+	"github.com/joho/godotenv"
 )
 
 // Execute Run server - Load configuration file and start server
 func (x *RunCommand) Execute(args []string) error {
-	config := &configuration.Configuration{}
-	err := config.Load(x.ConfigurationFilename)
+	if err := godotenv.Load(); err != nil {
+		log.Println("File .env not found, reading configuration from ENV")
+	}
+
+	var cfg server.Config
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalln("Failed to parse ENV")
+	}
+
+	s, err := server.New(&cfg)
 	if err != nil {
-		log.Fatalf("Configuration file with name %s not found", x.ConfigurationFilename)
+		return err
 	}
 
 	// Try to connect to the Queue server several times until success or out of RetryNumber
-	retry := config.RetryNumber
-	connection, err := server.Setup(*config)
+	retry := cfg.RetryNumber
+	err = s.Connect()
 	for (err != nil) && (retry > 0) {
-		time.Sleep(time.Second * time.Duration(config.RetryInterval))
-		connection, err = server.Setup(*config)
+		time.Sleep(time.Second * time.Duration(cfg.RetryInterval))
+		err = s.Connect()
 		retry--
 	}
 	if err != nil {
@@ -33,12 +38,10 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	// Run background workers
-	server.RunWorkers(connection, *config)
+	s.RunWorkers()
 
-	// Run HTTP server and block execution
-	if err := fasthttp.ListenAndServe(net.JoinHostPort(config.Host, fmt.Sprintf("%d", config.Port)), server.RequestHandler); err != nil {
-		log.Fatalf("Error in ListenAndServe: %s", err)
-	}
+	// Listen and serve
+	s.Serve()
 
 	return nil
 }

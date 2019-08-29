@@ -1,17 +1,14 @@
 package main
 
 import (
-	"os"
-
 	"github.com/codex-team/hawk.collector/collector/cmd"
-
 	"github.com/jessevdk/go-flags"
+	"os"
 )
 
 // Command-line interface options
 var opts struct {
-	Init cmd.InitCommand `command:"init" description:"Initialize server configuration"`
-	Run  cmd.RunCommand  `command:"run" description:"Run server"`
+	Run cmd.RunCommand `command:"run" description:"Run server"`
 }
 
 func main() {

@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/codex-team/hawk.collector/collector/configuration"
 	"github.com/codex-team/hawk.collector/collector/lib"
 
 	"github.com/dgrijalva/jwt-go"
@@ -12,9 +11,6 @@ import (
 
 // global messages processing queue
 var messagesQueue = make(chan lib.Message)
-
-// JWT signature secret
-var jwtSecret string
 
 // SendAnswer – send HTTP response to the client
 //
@@ -58,29 +54,6 @@ func (r *Request) DecodeJWT() (bool, string, string) {
 	}
 
 	return true, tokenData.ProjectId, ""
-}
-
-// Setup - initialize connection to the queue server and initialize configuration variables
-func Setup(config configuration.Configuration) (lib.Connection, error) {
-	connection := lib.Connection{}
-	err := connection.Init(config.BrokerURL, config.Exchange)
-	if err != nil {
-		return connection, err
-	}
-	jwtSecret = config.JwtSecret
-
-	return connection, nil
-}
-
-// RunWorkers - run background worker which will read message from the channel and process it.
-// There may be several workers with separate connections to the RabbitMQ
-func RunWorkers(connection lib.Connection, config configuration.Configuration) bool {
-	go func(conn lib.Connection, ch <-chan lib.Message) {
-		for msg := range ch {
-			_ = conn.Publish(msg)
-		}
-	}(connection, messagesQueue)
-	return true
 }
 
 // Data of JWT token
