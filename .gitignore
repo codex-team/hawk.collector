@@ -14,5 +14,5 @@
 .idea
 venv
 .DS_Store
-hawk.catcher
 hawk.collector
+.env
