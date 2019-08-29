@@ -22,10 +22,10 @@ func (x *RunCommand) Execute(args []string) error {
 
 	// Try to connect to the Queue server several times until success or out of RetryNumber
 	retry := config.RetryNumber
-	connection, err := server.Connect(*config)
+	connection, err := server.Setup(*config)
 	for (err != nil) && (retry > 0) {
 		time.Sleep(time.Second * time.Duration(config.RetryInterval))
-		connection, err = server.Connect(*config)
+		connection, err = server.Setup(*config)
 		retry--
 	}
 	if err != nil {

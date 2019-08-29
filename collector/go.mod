@@ -3,6 +3,7 @@ module github.com/codex-team/hawk.collector/collector
 require (
 	github.com/AlecAivazis/survey v1.8.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fasthttp/websocket v1.4.0
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/jessevdk/go-flags v1.4.0

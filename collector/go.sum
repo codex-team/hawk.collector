@@ -2,9 +2,10 @@ github.com/AlecAivazis/survey v1.8.0 h1:pT7NfmZ3Yp89G44qADRfxx3ZtdQcLdksNgI9u/bk
 github.com/AlecAivazis/survey v1.8.0/go.mod h1:MVECab6WqEH1aXhj8nKIwF7HEAJAj2bhhGiSjNy3wII=
 github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b h1:sSQK05nvxs4UkgCJaxihteu+r+6ela3dNMm7NVmsS3c=
 github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b/go.mod h1:oX5x61PbNXchhh0oikYAH+4Pcfw5LKv21+Jnpr6r6Pc=
-github.com/codex-team/hawk.collector v0.0.0-20190811080358-656f8a9f6fec h1:WOS9Nj6a//FB2CdsRWnJxqTGWaVtxbTXJ9jKP5Enn04=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/fasthttp/websocket v1.4.0 h1:hWw+gsVLA82cQFDF/vzydHjOedj1Oo00T/uKk+J5kcs=
 github.com/fasthttp/websocket v1.4.0/go.mod h1:4nypHRMj3oQPKA3/LllCXx0F0L5VyVKlMgo3lgbbwBM=
 github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c h1:kp3AxgXgDOmIJFR7bIwqFhwJ2qWar8tEQSE5XXhCfVk=
