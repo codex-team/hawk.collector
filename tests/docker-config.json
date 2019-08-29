@@ -1,7 +1,7 @@
 {
   "brokerUrl": "amqp://guest:guest@rabbitmq:5672/",
   "exchangeName": "errors",
-  "serverHost": "localhost",
+  "serverHost": "0.0.0.0",
   "serverPort": 3000,
   "retryNumber": 5,
   "retryInterval": 3,
