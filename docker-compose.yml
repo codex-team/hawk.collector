@@ -17,6 +17,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./tests/docker-docker.json:/app/docker-docker.json:ro
+      - ./.env.docker:/app/.env
     depends_on:
       - rabbitmq
