@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/codex-team/hawk.collector/lib"
+	"github.com/valyala/fasthttp"
 	"io"
 	"log"
 	"mime/multipart"
-
-	"github.com/codex-team/hawk.collector/lib"
-	"github.com/valyala/fasthttp"
 )
 
 // Route name where to send sourcemaps
@@ -33,9 +32,11 @@ func sourcemapUploadHandler(ctx *fasthttp.RequestCtx) {
 	log.Printf("%s sourcemapUploadHandler request from %s", ctx.Method(), ctx.RemoteIP())
 
 	token := ctx.Request.Header.Peek("Authorization")
-	if len(token) == 0 {
+	if len(token) < 8 {
 		sendAnswer(ctx, Response{true, "Provide Authorization header", fasthttp.StatusBadRequest})
 	}
+	// cut "Bearer "
+	token = token[7:]
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
