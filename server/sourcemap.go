@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
@@ -22,9 +23,9 @@ type SourcemapFile struct {
 
 // SourcemapMessage represents message structure for sending to queue
 type SourcemapMessage struct {
-	Token   string          `json:"token"`
-	Release string          `json:"release"`
-	Files   []SourcemapFile `json:"files"`
+	ProjectId string          `json:"projectId"`
+	Release   string          `json:"release"`
+	Files     []SourcemapFile `json:"files"`
 }
 
 // sourcemapUploadHandler processes HTTP request for sourcemap uploading
@@ -55,6 +56,13 @@ func uploadSourcemap(form *multipart.Form, token []byte) Response {
 	if len(releaseValues) != 1 {
 		return Response{true, "Provide single `release` form value", fasthttp.StatusInternalServerError}
 	}
+
+	// Validate JWT
+	projectId, err := DecodeJWT(string(token))
+	if err != nil {
+		return Response{true, fmt.Sprintf("%v", err), fasthttp.StatusBadRequest}
+	}
+
 	release := releaseValues[0]
 	for _, v := range form.File {
 		for _, header := range v {
@@ -68,7 +76,7 @@ func uploadSourcemap(form *multipart.Form, token []byte) Response {
 			files = append(files, SourcemapFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
-	messageToSend := SourcemapMessage{Token: string(token), Files: files, Release: release}
+	messageToSend := SourcemapMessage{ProjectId: projectId, Files: files, Release: release}
 
 	// Marshal JSON to string to send to queue
 	minifiedMessage, err := json.Marshal(messageToSend)
