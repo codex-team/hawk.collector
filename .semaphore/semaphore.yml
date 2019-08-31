@@ -16,12 +16,15 @@ blocks:
             - go mod download
             - go build -o bin/hawk.collector .
             - cache store $(checksum bin/hawk.collector) bin/hawk.collector
-
-  - name: Unit tests
-    task:
-      jobs:
         - name: go test
           commands:
-            - checkout
-            - sem-version go 1.12
             - go test ./... -v
+
+  - name: "Build"
+    task:
+      jobs:
+        - name: Docker build
+          commands:
+            - checkout
+            - docker build -t hawk-collector .
+            - docker images
