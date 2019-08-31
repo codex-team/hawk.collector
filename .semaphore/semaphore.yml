@@ -25,11 +25,11 @@ blocks:
             - checkout
             - sem-version go 1.12
             - cache restore $SEMAPHORE_PROJECT_NAME-$(checksum go.sum)
-            - go test ./... -v
+            - go test ./... -v -mod=vendor
 
   - name: Docker build
     skip:
-      when: "branch = 'stage' OR branch = 'master' OR branch='semaphore-setup' or branch =~ '^release-\/'"
+      when: "branch != 'stage' AND branch != 'master' AND branch != 'semaphore-setup' AND branch !~ '^release-\/'"
     task:
       secrets:
         - name: docker-registry
