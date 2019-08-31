@@ -6,25 +6,39 @@ agent:
     os_image: ubuntu1804
 
 blocks:
-  - name: Hawk.collector
+  - name: Build sources
     task:
       jobs:
         - name: Build sources
           commands:
             - checkout
             - sem-version go 1.12
-            - go mod download
-            - go build -o bin/hawk.collector .
-            - cache store $(checksum bin/hawk.collector) bin/hawk.collector
-        - name: go test
+            - go mod vendor
+            - cache store $SEMAPHORE_PROJECT_NAME-$(checksum go.sum) vendor
+            - go build -o bin/hawk.collector -mod=vendor .
+
+  - name: Unit tests
+    task:
+      jobs:
+        - name: Unit tests
           commands:
+            - checkout
+            - sem-version go 1.12
+            - cache restore $SEMAPHORE_PROJECT_NAME-$(checksum go.sum)
             - go test ./... -v
 
-  - name: "Build"
+  - name: Docker build
+    skip:
+      when: "branch = 'stage' OR branch = 'master' OR branch='semaphore-setup' or branch =~ '^release-\/'"
     task:
+      secrets:
+        - name: docker-registry
       jobs:
         - name: Docker build
           commands:
+            - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" ${REGISTRY_ADDRESS} --password-stdin
             - checkout
-            - docker build -t hawk-collector .
+            - docker build -t hawk-collector:${SEMAPHORE_GIT_BRANCH} .
             - docker images
+            - docker tag hawk-collector:${SEMAPHORE_GIT_BRANCH} ${REGISTRY_NAME}/hawk-collector:${SEMAPHORE_GIT_BRANCH}
+            - docker push ${REGISTRY_NAME}/hawk-collector
