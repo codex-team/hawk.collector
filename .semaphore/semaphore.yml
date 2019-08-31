@@ -46,7 +46,7 @@ blocks:
   - name: Send notification
     task:
       secrets:
-        - name: docker-registry
+        - name: codex-bot
       jobs:
         - name: Send notification
           commands:
