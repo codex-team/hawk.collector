@@ -44,6 +44,8 @@ blocks:
             - docker push ${REGISTRY_NAME}/hawk-collector
 
   - name: Send notification
+    skip:
+      when: "branch != 'stage' AND branch != 'master' AND branch != 'semaphore-setup' AND branch !~ '^release-\/'"
     task:
       secrets:
         - name: codex-bot

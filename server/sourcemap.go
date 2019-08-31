@@ -34,6 +34,7 @@ func sourcemapUploadHandler(ctx *fasthttp.RequestCtx) {
 	token := ctx.Request.Header.Peek("Authorization")
 	if len(token) < 8 {
 		sendAnswer(ctx, Response{true, "Provide Authorization header", fasthttp.StatusBadRequest})
+		return
 	}
 	// cut "Bearer "
 	token = token[7:]
@@ -42,8 +43,10 @@ func sourcemapUploadHandler(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		log.Printf("Error: %s", err)
 		sendAnswer(ctx, Response{true, "Multipart form is not provided", fasthttp.StatusBadRequest})
+		return
 	} else {
 		sendAnswer(ctx, uploadSourcemap(form, token))
+		return
 	}
 }
 
