@@ -1,0 +1,15 @@
+version: v1.0
+name: hawk.collector.ci
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Docker-based build
+    task:
+      jobs:
+      - name: Docker build
+        commands:
+          - checkout
+          - docker build -t collector:v1 .
+          - docker run collector:v1
