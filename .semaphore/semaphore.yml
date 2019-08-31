@@ -1,15 +1,27 @@
 version: v1.0
-name: hawk.collector.ci
+name: Go project example
 agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu1804
+
 blocks:
-  - name: Docker-based build
+  - name: Hawk.collector
     task:
       jobs:
-      - name: Docker build
-        commands:
-          - checkout
-          - docker build -t collector:v1 .
-          - docker run collector:v1
+        - name: Build sources
+          commands:
+            - checkout
+            - sem-version go 1.12
+            - go mod download
+            - go build -o bin/hawk.collector .
+            - cache store $(checksum bin/hawk.collector) bin/hawk.collector
+
+  - name: Unit tests
+    task:
+      jobs:
+        - name: go test
+          commands:
+            - checkout
+            - sem-version go 1.12
+            - go test ./... -v
