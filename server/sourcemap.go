@@ -3,12 +3,12 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/codex-team/hawk.collector/lib"
+	"github.com/valyala/fasthttp"
 	"io"
 	"log"
 	"mime/multipart"
-
-	"github.com/codex-team/hawk.collector/lib"
-	"github.com/valyala/fasthttp"
 )
 
 // Route name where to send sourcemaps
@@ -22,9 +22,9 @@ type SourcemapFile struct {
 
 // SourcemapMessage represents message structure for sending to queue
 type SourcemapMessage struct {
-	Token   string          `json:"token"`
-	Release string          `json:"release"`
-	Files   []SourcemapFile `json:"files"`
+	ProjectId string          `json:"projectId"`
+	Release   string          `json:"release"`
+	Files     []SourcemapFile `json:"files"`
 }
 
 // sourcemapUploadHandler processes HTTP request for sourcemap uploading
@@ -32,9 +32,11 @@ func sourcemapUploadHandler(ctx *fasthttp.RequestCtx) {
 	log.Printf("%s sourcemapUploadHandler request from %s", ctx.Method(), ctx.RemoteIP())
 
 	token := ctx.Request.Header.Peek("Authorization")
-	if len(token) == 0 {
+	if len(token) < 8 {
 		sendAnswer(ctx, Response{true, "Provide Authorization header", fasthttp.StatusBadRequest})
 	}
+	// cut "Bearer "
+	token = token[7:]
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
@@ -55,6 +57,13 @@ func uploadSourcemap(form *multipart.Form, token []byte) Response {
 	if len(releaseValues) != 1 {
 		return Response{true, "Provide single `release` form value", fasthttp.StatusInternalServerError}
 	}
+
+	// Validate JWT
+	projectId, err := DecodeJWT(string(token))
+	if err != nil {
+		return Response{true, fmt.Sprintf("%v", err), fasthttp.StatusBadRequest}
+	}
+
 	release := releaseValues[0]
 	for _, v := range form.File {
 		for _, header := range v {
@@ -68,7 +77,7 @@ func uploadSourcemap(form *multipart.Form, token []byte) Response {
 			files = append(files, SourcemapFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
-	messageToSend := SourcemapMessage{Token: string(token), Files: files, Release: release}
+	messageToSend := SourcemapMessage{ProjectId: projectId, Files: files, Release: release}
 
 	// Marshal JSON to string to send to queue
 	minifiedMessage, err := json.Marshal(messageToSend)

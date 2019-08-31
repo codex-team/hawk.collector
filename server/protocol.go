@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/codex-team/hawk.collector/lib"
 
@@ -33,31 +34,19 @@ func sendAnswer(ctx *fasthttp.RequestCtx, r Response) {
 	failOnError(err, fmt.Sprintf("Cannot write an answer: %d", n))
 }
 
-// DecodeJWT – check if request structure has valid format and return projectId from JWT
-//
-// Return:
-// - is the request structure valid (bool)
-// - cause of the error (string). Empty if the request is valid
-func (r *Request) decodeJWT() (bool, string, string) {
-	if r.Token == "" {
-		return false, "", "Token is empty"
-	}
-	if r.CatcherType == "" {
-		return false, "", "CatcherType is empty"
-	}
-
-	tokenString := r.Token
+// DecodeJWT – check JWT and return projectId
+func DecodeJWT(token string) (string, error) {
 	var tokenData JWTClaim
-	_, err := jwt.ParseWithClaims(tokenString, &tokenData, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(token, &tokenData, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecret), nil
 	})
 	if err != nil {
-		return false, "", "Invalid JWT signature"
+		return "", errors.New("Invalid JWT signature")
 	}
 
 	if tokenData.ProjectId == "" {
-		return false, "", "Invalid JWT"
+		return "", errors.New("Empty projectId")
 	}
 
-	return true, tokenData.ProjectId, ""
+	return tokenData.ProjectId, nil
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/codex-team/hawk.collector/lib"
@@ -30,10 +31,16 @@ func processMessage(body []byte) Response {
 		return Response{true, "Invalid JSON format", fasthttp.StatusBadRequest}
 	}
 
-	// Validate Message data
-	valid, projectId, cause := message.decodeJWT()
-	if !valid {
-		return Response{true, cause, fasthttp.StatusBadRequest}
+	if message.Token == "" {
+		return Response{true, "Token is empty", fasthttp.StatusBadRequest}
+	}
+	if message.CatcherType == "" {
+		return Response{true, "CatcherType is empty", fasthttp.StatusBadRequest}
+	}
+	// Validate JWT
+	projectId, err := DecodeJWT(message.Token)
+	if err != nil {
+		return Response{true, fmt.Sprintf("%v", err), fasthttp.StatusBadRequest}
 	}
 
 	// Compress JSON payload
