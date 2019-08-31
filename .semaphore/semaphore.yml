@@ -42,3 +42,12 @@ blocks:
             - docker images
             - docker tag hawk-collector:${SEMAPHORE_GIT_BRANCH} ${REGISTRY_NAME}/hawk-collector:${SEMAPHORE_GIT_BRANCH}
             - docker push ${REGISTRY_NAME}/hawk-collector
+
+  - name: Send notification
+    task:
+      secrets:
+        - name: docker-registry
+      jobs:
+        - name: Send notification
+          commands:
+            - curl -X POST --data "message=📦🦑 *${SEMAPHORE_PROJECT_NAME}* deployed on \`${SEMAPHORE_GIT_BRANCH}\` branch&parse_mode=Markdown" https://notify.bot.codex.so/u/${HAWK_TELEGRAM_CHAT}
