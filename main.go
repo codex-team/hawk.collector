@@ -8,7 +8,7 @@ import (
 
 // Command-line interface options
 var opts struct {
-	Run cmd.RunCommand `command:"run" description:"Run server"`
+	Run cmd.RunCommand `command:"run" description:"Run server"` // nolint: unused
 }
 
 func main() {
