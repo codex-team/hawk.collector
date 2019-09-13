@@ -8,5 +8,6 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/streadway/amqp v0.0.0-20181205114330-a314942b2fd9
 	github.com/stretchr/testify v1.3.0
+	github.com/tidwall/gjson v1.3.2
 	github.com/valyala/fasthttp v1.1.0
 )
