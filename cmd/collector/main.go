@@ -23,14 +23,17 @@ func (x *RunCommand) Execute(args []string) error {
 		log.Println("File .env not found, reading configuration from ENV")
 	}
 
+	// load config from .env
 	var cfg cmd.Config
 	if err := env.Parse(&cfg); err != nil {
 		log.Fatalln("Failed to parse ENV")
 	}
 
+	// connect to AMQP broker with retries
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
 
+	// start HTTP and websocket server
 	serverObj := server.New(cfg, brokerObj)
 	serverObj.Run()
 

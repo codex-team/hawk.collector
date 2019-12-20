@@ -10,10 +10,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// Handler of error messages
 type Handler struct {
-	Broker                     *broker.Broker
+	Broker    *broker.Broker
+	JwtSecret string
+
+	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int
-	JwtSecret                  string
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -34,21 +37,25 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{true, "CatcherType is empty"}
 	}
 
-	// Validate JWT
+	// Validate JWT token
 	projectId, err := handler.DecodeJWT(message.Token)
 	if err != nil {
 		return ResponseMessage{true, fmt.Sprintf("%s", err)}
 	}
 
+	// Validate if message is a valid JSON
 	if !gjson.Valid(string(message.Payload)) {
 		return ResponseMessage{true, "Invalid payload JSON format"}
 	}
 
+	// convert message to JSON format
 	messageToSend := BrokerMessage{ProjectId: projectId, Payload: message.Payload}
 	rawMessage, err := json.Marshal(messageToSend)
 	cmd.PanicOnError(err)
 
+	// send serialized message to a broker
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: message.CatcherType}
+
 	return ResponseMessage{false, "OK"}
 }
 

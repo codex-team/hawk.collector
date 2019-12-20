@@ -15,6 +15,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 		}, 400)
 	}
 
+	// process raw body via unified message handler
 	body := ctx.PostBody()
 	response := handler.process(body)
 	if response.Error {
@@ -24,6 +25,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+// Send ResponseMessage in JSON with statusCode set
 func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage, code int) {
 	ctx.Response.SetStatusCode(code)
 

@@ -8,11 +8,15 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// Server represents fasthttp server
 type Server struct {
 	Broker *broker.Broker
+
+	// configuration from .env
 	Config cmd.Config
 }
 
+// New creates new server and initiates it with link to the broker and copy of configuration parameters
 func New(c cmd.Config, b *broker.Broker) *Server {
 	return &Server{
 		Broker: b,
@@ -20,9 +24,13 @@ func New(c cmd.Config, b *broker.Broker) *Server {
 	}
 }
 
+// Run server
 func (s *Server) Run() {
 	fastHTTPServer := fasthttp.Server{
-		Handler:            s.handler,
+		// global handler
+		Handler: s.handler,
+
+		// limit HTTP body size
 		MaxRequestBodySize: s.Config.MaxHTTPBodySize,
 	}
 
@@ -30,13 +38,17 @@ func (s *Server) Run() {
 	cmd.FailOnError(err, "Server run error")
 }
 
+// global fasthttp entrypoint
 func (s *Server) handler(ctx *fasthttp.RequestCtx) {
+
+	// handler of error messages via HTTP and websocket protocols
 	errorsHandler := errorshandler.Handler{
 		Broker:                     s.Broker,
 		JwtSecret:                  s.Config.JwtSecret,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
 	}
 
+	// handler of sourcemap messages via HTTP
 	sourcemapsHander := sourcemapshandler.Handler{
 		SourcemapExchange:              s.Config.SourcemapExchange,
 		Broker:                         s.Broker,

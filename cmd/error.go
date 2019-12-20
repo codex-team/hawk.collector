@@ -12,6 +12,7 @@ func FailOnError(err error, msgs ...string) {
 	}
 }
 
+// PanicOnError - throw a recoverable panic
 func PanicOnError(err error) {
 	if err != nil {
 		panic(err)

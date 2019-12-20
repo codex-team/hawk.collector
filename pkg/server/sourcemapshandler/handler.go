@@ -20,7 +20,6 @@ type Handler struct {
 }
 
 func (handler *Handler) process(form *multipart.Form, token string) ResponseMessage {
-	var files []SourcemapFile
 	releaseValues, ok := form.Value["release"]
 	if !ok {
 		return ResponseMessage{true, "Provide `release` form value"}
@@ -29,29 +28,40 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 		return ResponseMessage{true, "Provide single `release` form value"}
 	}
 
-	// Validate JWT
+	// Validate JWT token
 	projectId, err := handler.DecodeJWT(token)
 	if err != nil {
 		return ResponseMessage{true, fmt.Sprintf("%s", err)}
 	}
 
+	// peek first release value
 	release := releaseValues[0]
-	for _, v := range form.File {
-		for _, header := range v {
+
+	var files []SourcemapFile
+
+	for _, v := range form.File { // for each File part in multipart form
+		for _, header := range v { // for each MIME-style header
 			f, _ := header.Open()
 			defer f.Close()
+
+			// copy file bytes to a buffer
 			buf := bytes.NewBuffer(nil)
 			_, err := io.Copy(buf, f)
 			if err != nil {
 				break
 			}
+
+			// append file name and content to files array
 			files = append(files, SourcemapFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
+
+	// convert message to JSON format
 	messageToSend := SourcemapMessage{ProjectId: projectId, Files: files, Release: release}
 	rawMessage, err := json.Marshal(messageToSend)
 	cmd.PanicOnError(err)
 
+	// send serialized message to a broker
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.SourcemapExchange}
 	return ResponseMessage{false, "OK"}
 }

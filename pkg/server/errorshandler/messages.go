@@ -5,17 +5,20 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type ResponseMessage struct {
-	Error   bool   `json:"error"`
-	Message string `json:"message"`
-}
-
+// ResponseMessage represents incoming message from a client
 type CatcherMessage struct {
 	Token       string          `json:"token"`
 	Payload     json.RawMessage `json:"payload"`
 	CatcherType string          `json:"catcherType"`
 }
 
+// ResponseMessage represents response message to a client
+type ResponseMessage struct {
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
+}
+
+// ResponseMessage represents message to a queue
 type BrokerMessage struct {
 	ProjectId string          `json:"projectId"`
 	Payload   json.RawMessage `json:"payload"`

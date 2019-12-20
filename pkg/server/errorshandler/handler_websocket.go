@@ -19,6 +19,7 @@ var upgrader = websocket.FastHTTPUpgrader{
 // HandleWebsocket handles WebSocket connection
 func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
+		// limit read size of MaxErrorCatcherMessageSize bytes
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
 		for {
 			messageType, message, err := conn.ReadMessage()
@@ -26,15 +27,16 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				break
 			}
 
-			sendAnswerWebsocket(conn, messageType, ResponseMessage{
-				Error:   false,
-				Message: handler.process(message).Message,
-			})
+			// process raw body via unified message handler
+			sendAnswerWebsocket(conn, messageType, handler.process(message))
 		}
 	})
+
+	// panic if connection is closed ungracefully
 	cmd.PanicOnError(err)
 }
 
+// Send ResponseMessage in JSON
 func sendAnswerWebsocket(conn *websocket.Conn, messageType int, r ResponseMessage) {
 	response, err := json.Marshal(r)
 	cmd.PanicOnError(err)

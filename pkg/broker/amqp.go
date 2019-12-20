@@ -33,7 +33,7 @@ func (connection *Connection) Init(url string, exchangeName string) error {
 	err = connection.channel.ExchangeDeclare(
 		exchangeName, // name
 		"direct",
-		true,  // durable
+		true,  // durable queue
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
@@ -63,8 +63,10 @@ func (connection *Connection) Publish(msg Message) error {
 			ContentType:  "text/plain",
 			Body:         msg.Payload,
 		})
+
 	if err != nil {
 		log.Fatalf("Failed to publish a message to a %s queue: %s", connection.Queue, err)
 	}
+
 	return err
 }
