@@ -5,6 +5,24 @@ import (
 	"log"
 )
 
+// Connection contains basic settings for AMQP connection
+type Connection struct {
+	// Exchange name
+	Exchange string
+
+	// Queue name
+	Queue string
+
+	// If message must be routable (http://www.rabbitmq.com/faq.html#mandatory-flat-routing)
+	Mandatory bool
+
+	// If message must be delivered only if there is a consumer (http://www.rabbitmq.com/faq.html#immediate-flat-routing)
+	Immediate bool
+
+	// Channel link
+	channel *amqp.Channel
+}
+
 // Init – Initialize connection to RabbitMQ with URL and default exchange name
 //
 // It connects to RabbitMQ with credentials and address from URL string (ex: amqp://guest:guest@localhost:5672/)

@@ -20,8 +20,10 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	response := handler.process(body)
 	if response.Error {
 		sendAnswerHTTP(ctx, response, 400)
+		return
 	} else {
 		sendAnswerHTTP(ctx, response, 200)
+		return
 	}
 }
 
