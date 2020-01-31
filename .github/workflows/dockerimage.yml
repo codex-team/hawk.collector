@@ -16,4 +16,4 @@ jobs:
         docker build . --file Dockerfile --tag hawk-collector:${GITHUB_REF##*/}
         docker tag hawk-collector:${GITHUB_REF##*/} ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector:${GITHUB_REF##*/}
         docker push ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector
-        curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.CUSTOM_DOCKER_REGISTRY }}/deploy
+        curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.DEPLOY_ADDRESS }}
