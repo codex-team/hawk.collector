@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/codex-team/hawk.collector/cmd"
+	"github.com/codex-team/hawk.collector/cmd/collector"
 	"github.com/jessevdk/go-flags"
 	"os"
 )
 
 // Command-line interface options
 var opts struct {
-	Run cmd.RunCommand `command:"run" description:"Run server"` // nolint: unused
+	Run collector.RunCommand `command:"run" description:"Run server"` // nolint: unused
 }
 
 func main() {

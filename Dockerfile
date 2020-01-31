@@ -1,8 +1,7 @@
-FROM golang:stretch as builder
+FROM golang:1.13-stretch as builder
 ARG BUILD_DIRECTORY=/build
 
-# enable go modules
-ENV GO111MODULE=on
+# disable CGO
 ENV CGO_ENABLED=0
 
 # now copy go.mod and go.sum to the build path

@@ -36,7 +36,7 @@ async def run(r):
         responses = asyncio.gather(*tasks)
         await responses
 
-number = 100000
+number = 1
 loop = asyncio.get_event_loop()
 t = datetime.now()
 future = asyncio.ensure_future(run(number))

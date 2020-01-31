@@ -8,15 +8,9 @@ Powerful module that can handle most errors around the web.
 
 Install RabbitMQ manually and build Hawk.collector
 
-Before build enter the working directory
-
 ```bash
-cd ./collector
-```
-
-```bash
-make
-./collector/bin/hawk.collector
+make build
+./bin/hawk.collector
 ```
 
 ## Build for specific os
@@ -47,16 +41,15 @@ make docker
 
 # Data flows
 
-## Request from error catcher
+## Request from errors catcher
 
-The following structure represents data got through the HTTP request (`POST` request to `'/'` with `Content-Type: application/json`)
+The following structure represents data that go through the HTTP request (`POST` request to `'/'` with `Content-Type: application/json`)
 
 | name         | type            | description                                         |
 | ------------ | --------------- | --------------------------------------------------- |
 | token        | string (base64) | JWT in base64 format                                |
 | payload      | raw JSON        | Nested valid JSON                                   |
 | catcherType  | string          | Type of the catcher (`errors/golang`, `errors/php`) |
-| sender       | Sender          | Information about sender                            |
 
 ## Request to upload sourcemap
 
@@ -103,6 +96,22 @@ For now we support RabbitMQ as a general AMQP broker.
 We declare a durable **exchange** with `errors` name.
 The valid payload JSON from `Request` structure goes directly to the exchange with the route specified by `catcherType` value.
 
+# Environment variables
+
+Basic configuration is taken from `.env` file.
+
+| variable    | example value   | description               |
+| ------- | ------ | ------------------------- |
+| BROKER_URL   | amqp://guest:guest@localhost:5672/   | Connection URI to RabbitMQ  |
+| EXCHANGE | errors | Basic exchange for errors             |
+| SOURCEMAP_EXCHANGE | release/javascript | Basic exchange for sourcemaps            |
+| RETRY_NUMBER | 10 | Try to establish connection with broker for N times            |
+| RETRY_INTERVAL | 4 | Wait N seconds before retry to establish connection with broker            |
+| JWT_SECRET | qwerty | JWT token secret key            |
+| MAX_REQUEST_BODY_SIZE | 20000000 | Maximum available HTTP body size for any request (in bytes)            |
+| MAX_ERROR_CATCHER_MESSAGE_SIZE | 25000 | Maximum available HTTP body size for error request (in bytes)            |
+| MAX_SOURCEMAP_CATCHER_MESSAGE_SIZE | 250000 | Maximum available HTTP body size for sourcemap request (in bytes)            |
+| LISTEN | localhost:3000 | Listen host and port            |
 
 # Test
 
@@ -121,9 +130,6 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 ```json
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9",
-  "sender": {
-    "ip": "127.0.0.1"
-  },
   "catcherType": "errors/golang",
   "payload": {
     "title": "Field `blocks` is missing",
