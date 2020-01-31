@@ -13,6 +13,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 			Error:   true,
 			Message: "Request is too large",
 		}, 400)
+		return
 	}
 
 	// process raw body via unified message handler

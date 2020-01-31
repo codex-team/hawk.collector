@@ -50,7 +50,6 @@ The following structure represents data that go through the HTTP request (`POST`
 | token        | string (base64) | JWT in base64 format                                |
 | payload      | raw JSON        | Nested valid JSON                                   |
 | catcherType  | string          | Type of the catcher (`errors/golang`, `errors/php`) |
-| sender       | Sender          | Information about sender                            |
 
 ## Request to upload sourcemap
 
@@ -110,8 +109,8 @@ Basic configuration is taken from `.env` file.
 | RETRY_INTERVAL | 4 | Wait N seconds before retry to establish connection with broker            |
 | JWT_SECRET | qwerty | JWT token secret key            |
 | MAX_REQUEST_BODY_SIZE | 20000000 | Maximum available HTTP body size for any request (in bytes)            |
-| MAX_ERROR_CATCHER_MESSAGE_SIZE | 10 | Maximum available HTTP body size for error request (in bytes)            |
-| MAX_SOURCEMAP_CATCHER_MESSAGE_SIZE | 500 | Maximum available HTTP body size for sourcemap request (in bytes)            |
+| MAX_ERROR_CATCHER_MESSAGE_SIZE | 25000 | Maximum available HTTP body size for error request (in bytes)            |
+| MAX_SOURCEMAP_CATCHER_MESSAGE_SIZE | 250000 | Maximum available HTTP body size for sourcemap request (in bytes)            |
 | LISTEN | localhost:3000 | Listen host and port            |
 
 # Test
@@ -131,9 +130,6 @@ You can also send requests manually via insomnia or cURL to the `http://localhos
 ```json
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9",
-  "sender": {
-    "ip": "127.0.0.1"
-  },
   "catcherType": "errors/golang",
   "payload": {
     "title": "Field `blocks` is missing",

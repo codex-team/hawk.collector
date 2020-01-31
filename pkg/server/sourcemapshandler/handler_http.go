@@ -26,6 +26,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 			Error:   true,
 			Message: "Request is too large",
 		}, 400)
+		return
 	}
 
 	// collect JWT token from HTTP Authorization header
