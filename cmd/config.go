@@ -21,7 +21,7 @@ type Config struct {
 	JwtSecret string `env:"JWT_SECRET"`
 
 	// Maximum HTTP body size (global)
-	MaxHTTPBodySize int `env:"MAX_HTTP_BODY_SIZE"`
+	MaxRequestBodySize int `env:"MAX_REQUEST_BODY_SIZE"`
 
 	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int `env:"MAX_ERROR_CATCHER_MESSAGE_SIZE"`

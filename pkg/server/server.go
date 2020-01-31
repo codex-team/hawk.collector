@@ -31,7 +31,7 @@ func (s *Server) Run() {
 		Handler: s.handler,
 
 		// limit HTTP body size
-		MaxRequestBodySize: s.Config.MaxHTTPBodySize,
+		MaxRequestBodySize: s.Config.MaxRequestBodySize,
 	}
 
 	err := fastHTTPServer.ListenAndServe(s.Config.Listen)
