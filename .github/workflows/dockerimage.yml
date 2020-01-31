@@ -1,0 +1,18 @@
+name: Docker Image CI
+
+on: [push]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: |
+        docker login -u ${{ secrets.CUSTOM_DOCKER_USERNAME }} -p ${{ secrets.CUSTOM_DOCKER_PASSWORD }} ${{ secrets.CUSTOM_DOCKER_REGISTRY }}
+        docker build . --file Dockerfile --tag hawk-collector:${GITHUB_REF##*/}
+        docker tag hawk-collector:${GITHUB_REF##*/} ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector:${GITHUB_REF##*/}
+        docker push ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector
