@@ -28,7 +28,9 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			}
 
 			// process raw body via unified message handler
-			sendAnswerWebsocket(conn, messageType, handler.process(message))
+			logger := ctx.Logger()
+			logger.Printf("%s", message)
+			sendAnswerWebsocket(conn, messageType, handler.process(message, logger))
 		}
 	})
 

@@ -8,6 +8,7 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/tidwall/gjson"
+	"github.com/valyala/fasthttp"
 )
 
 // Handler of error messages
@@ -19,7 +20,7 @@ type Handler struct {
 	MaxErrorCatcherMessageSize int
 }
 
-func (handler *Handler) process(body []byte) ResponseMessage {
+func (handler *Handler) process(body []byte, logger fasthttp.Logger) ResponseMessage {
 	// Check if the body is a valid JSON with the Message structure
 	message := CatcherMessage{}
 	err := json.Unmarshal(body, &message)
@@ -54,6 +55,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	cmd.PanicOnError(err)
 
 	// send serialized message to a broker
+	logger.Printf("%v", broker.Message{Payload: rawMessage, Route: message.CatcherType})
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: message.CatcherType}
 
 	return ResponseMessage{false, "OK"}

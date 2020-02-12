@@ -18,7 +18,9 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 	// process raw body via unified message handler
 	body := ctx.PostBody()
-	response := handler.process(body)
+	logger := ctx.Logger()
+	logger.Printf("%s", body)
+	response := handler.process(body, logger)
 	if response.Error {
 		sendAnswerHTTP(ctx, response, 400)
 		return
