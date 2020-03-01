@@ -7,6 +7,7 @@ import (
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
@@ -18,6 +19,8 @@ type Handler struct {
 
 	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int
+
+	ErrorsProcessed prometheus.Counter
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -58,6 +61,9 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
 	log.Debugf("Send to queue: %v", brokerMessage)
 	handler.Broker.Chan <- brokerMessage
+
+	// increment processed errors counter
+	handler.ErrorsProcessed.Inc()
 
 	return ResponseMessage{false, "OK"}
 }
