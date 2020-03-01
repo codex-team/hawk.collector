@@ -8,6 +8,7 @@ import (
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
 )
@@ -24,6 +25,9 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	if !ok {
 		return ResponseMessage{true, "Provide `release` form value"}
 	}
+
+	log.Debugf("[sourcemaps] Got releaseValues: %s", releaseValues)
+
 	if len(releaseValues) != 1 {
 		return ResponseMessage{true, "Provide single `release` form value"}
 	}
@@ -52,6 +56,7 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 			}
 
 			// append file name and content to files array
+			log.Debugf("[sourcemaps] Got filename: %s", header.Filename)
 			files = append(files, SourcemapFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
@@ -76,6 +81,7 @@ func (handler *Handler) DecodeJWT(token string) (string, error) {
 		return "", errors.New("invalid JWT signature")
 	}
 
+	log.Debugf("Token data: %s", tokenData)
 	if tokenData.ProjectId == "" {
 		return "", errors.New("empty projectId")
 	}

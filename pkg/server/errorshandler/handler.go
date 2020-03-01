@@ -7,8 +7,8 @@ import (
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"github.com/valyala/fasthttp"
 )
 
 // Handler of error messages
@@ -20,7 +20,7 @@ type Handler struct {
 	MaxErrorCatcherMessageSize int
 }
 
-func (handler *Handler) process(body []byte, logger fasthttp.Logger) ResponseMessage {
+func (handler *Handler) process(body []byte) ResponseMessage {
 	// Check if the body is a valid JSON with the Message structure
 	message := CatcherMessage{}
 	err := json.Unmarshal(body, &message)
@@ -55,8 +55,9 @@ func (handler *Handler) process(body []byte, logger fasthttp.Logger) ResponseMes
 	cmd.PanicOnError(err)
 
 	// send serialized message to a broker
-	logger.Printf("%v", broker.Message{Payload: rawMessage, Route: message.CatcherType})
-	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: message.CatcherType}
+	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
+	log.Debugf("Send to queue: %v", brokerMessage)
+	handler.Broker.Chan <- brokerMessage
 
 	return ResponseMessage{false, "OK"}
 }
@@ -71,6 +72,7 @@ func (handler *Handler) DecodeJWT(token string) (string, error) {
 		return "", errors.New("invalid JWT signature")
 	}
 
+	log.Debugf("Token data: %s", tokenData)
 	if tokenData.ProjectId == "" {
 		return "", errors.New("empty projectId")
 	}

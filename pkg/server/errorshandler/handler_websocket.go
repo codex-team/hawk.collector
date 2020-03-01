@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/fasthttp/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
 
@@ -27,10 +28,13 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				break
 			}
 
+			log.Debugf("Websocket message: %s", message)
+
 			// process raw body via unified message handler
-			logger := ctx.Logger()
-			logger.Printf("%s", message)
-			sendAnswerWebsocket(conn, messageType, handler.process(message, logger))
+			response := handler.process(message)
+			log.Debugf("Websocket response: %s", response)
+
+			sendAnswerWebsocket(conn, messageType, response)
 		}
 	})
 
