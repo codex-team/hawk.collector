@@ -4,6 +4,7 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/metrics"
 	"github.com/codex-team/hawk.collector/pkg/server"
 	"os"
 
@@ -47,6 +48,9 @@ func (x *RunCommand) Execute(args []string) error {
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
 	log.Infof("✓ Broker initialized on %s", cfg.BrokerURL)
+
+	// listen and serve prometheus metrics
+	go metrics.RunServer(cfg.MetricsListen)
 
 	// start HTTP and websocket server
 	serverObj := server.New(cfg, brokerObj)
