@@ -10,7 +10,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"time"
 )
 
 // Server represents fasthttp server
