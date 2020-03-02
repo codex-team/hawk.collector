@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
@@ -64,7 +63,10 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	// convert message to JSON format
 	messageToSend := SourcemapMessage{ProjectId: projectId, Files: files, Release: release}
 	rawMessage, err := json.Marshal(messageToSend)
-	cmd.PanicOnError(err)
+	if err != nil {
+		log.Errorf("Message marshalling error: %v", err)
+		return ResponseMessage{true, "Cannot encode message to JSON"}
+	}
 
 	// send serialized message to a broker
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.SourcemapExchange}

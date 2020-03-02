@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,7 +54,10 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	// convert message to JSON format
 	messageToSend := BrokerMessage{ProjectId: projectId, Payload: message.Payload}
 	rawMessage, err := json.Marshal(messageToSend)
-	cmd.PanicOnError(err)
+	if err != nil {
+		log.Errorf("Message marshalling error: %v", err)
+		return ResponseMessage{true, "Cannot encode message to JSON"}
+	}
 
 	// send serialized message to a broker
 	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
