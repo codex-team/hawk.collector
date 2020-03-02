@@ -34,4 +34,7 @@ type Config struct {
 
 	// Log level
 	LogLevel string `env:"LOG_LEVEL"`
+
+	// Metrics listen host:port
+	MetricsListen string `env:"METRICS_LISTEN"`
 }

@@ -6,6 +6,8 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
 	"github.com/codex-team/hawk.collector/pkg/server/sourcemapshandler"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
@@ -47,6 +49,7 @@ func (s *Server) Run() {
 		Broker:                     s.Broker,
 		JwtSecret:                  s.Config.JwtSecret,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
+		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
 	}
 
 	// handler of sourcemap messages via HTTP
