@@ -43,9 +43,6 @@ func (s *Server) Run() {
 
 		// limit HTTP body size
 		MaxRequestBodySize: s.Config.MaxRequestBodySize,
-
-		// close connection after 20 minutes
-		MaxKeepaliveDuration: 20 * time.Minute,
 	}
 
 	// handler of error messages via HTTP and websocket protocols
