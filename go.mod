@@ -15,3 +15,5 @@ require (
 	github.com/tidwall/gjson v1.3.2
 	github.com/valyala/fasthttp v1.1.0
 )
+
+go 1.13

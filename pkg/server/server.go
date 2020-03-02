@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
+	"time"
 )
 
 // Server represents fasthttp server
@@ -42,6 +43,9 @@ func (s *Server) Run() {
 
 		// limit HTTP body size
 		MaxRequestBodySize: s.Config.MaxRequestBodySize,
+
+		// close connection after 20 minutes
+		MaxKeepaliveDuration: 20 * time.Minute,
 	}
 
 	// handler of error messages via HTTP and websocket protocols
