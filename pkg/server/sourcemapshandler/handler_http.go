@@ -2,7 +2,6 @@ package sourcemapshandler
 
 import (
 	"encoding/json"
-	"github.com/codex-team/hawk.collector/cmd"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
@@ -66,8 +65,18 @@ func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage, code int) {
 	ctx.Response.SetStatusCode(code)
 
 	response, err := json.Marshal(r)
-	cmd.PanicOnError(err)
+	if err != nil {
+		log.Errorf("Error during response marshalling: %v", err)
+		ctx.Response.SetStatusCode(500)
+		ctx.SetConnectionClose()
+		return
+	}
 
 	_, err = ctx.Write(response)
-	cmd.PanicOnError(err)
+	if err != nil {
+		log.Errorf("Error during response write: %v", err)
+		ctx.Response.SetStatusCode(500)
+		ctx.SetConnectionClose()
+		return
+	}
 }

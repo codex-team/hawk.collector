@@ -2,7 +2,6 @@ package errorshandler
 
 import (
 	"encoding/json"
-	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/fasthttp/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -34,19 +33,25 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			response := handler.process(message)
 			log.Debugf("Websocket response: %s", response)
 
-			sendAnswerWebsocket(conn, messageType, response)
+			if err = sendAnswerWebsocket(conn, messageType, response); err != nil {
+				log.Errorf("Websocket response: %v", err)
+				return
+			}
 		}
 	})
 
-	// panic if connection is closed ungracefully
-	cmd.PanicOnError(err)
+	// log if connection is closed ungracefully
+	if err != nil {
+		log.Errorf("Websocket error: %v", err)
+	}
 }
 
 // Send ResponseMessage in JSON
-func sendAnswerWebsocket(conn *websocket.Conn, messageType int, r ResponseMessage) {
+func sendAnswerWebsocket(conn *websocket.Conn, messageType int, r ResponseMessage) error {
 	response, err := json.Marshal(r)
-	cmd.PanicOnError(err)
+	if err != nil {
+		return err
+	}
 
-	err = conn.WriteMessage(messageType, response)
-	cmd.PanicOnError(err)
+	return conn.WriteMessage(messageType, response)
 }
