@@ -7,6 +7,7 @@ import (
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -54,7 +55,9 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	cmd.PanicOnError(err)
 
 	// send serialized message to a broker
-	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: message.CatcherType}
+	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
+	log.Debugf("Send to queue: %v", brokerMessage)
+	handler.Broker.Chan <- brokerMessage
 
 	return ResponseMessage{false, "OK"}
 }
@@ -69,6 +72,7 @@ func (handler *Handler) DecodeJWT(token string) (string, error) {
 		return "", errors.New("invalid JWT signature")
 	}
 
+	log.Debugf("Token data: %s", tokenData)
 	if tokenData.ProjectId == "" {
 		return "", errors.New("empty projectId")
 	}

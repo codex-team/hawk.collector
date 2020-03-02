@@ -31,4 +31,7 @@ type Config struct {
 
 	// Listen HOST:PORT
 	Listen string `env:"LISTEN"`
+
+	// Log level
+	LogLevel string `env:"LOG_LEVEL"`
 }

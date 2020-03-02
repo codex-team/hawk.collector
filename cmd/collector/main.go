@@ -5,7 +5,9 @@ import (
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/server"
-	"log"
+	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/joho/godotenv"
 )
@@ -26,12 +28,25 @@ func (x *RunCommand) Execute(args []string) error {
 	// load config from .env
 	var cfg cmd.Config
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalln("Failed to parse ENV")
+		log.Fatalf("Failed to parse ENV")
 	}
+
+	// setup logging and set log level from config
+	level, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		level = log.ErrorLevel
+	}
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(level)
+	log.Infof("✓ Log level set on %s", level)
 
 	// connect to AMQP broker with retries
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
+	log.Infof("✓ Broker initialized on %s", cfg.BrokerURL)
 
 	// start HTTP and websocket server
 	serverObj := server.New(cfg, brokerObj)
