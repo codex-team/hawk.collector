@@ -9,6 +9,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	"time"
 )
 
 // Handler of error messages
@@ -47,12 +49,18 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	// Validate if message is a valid JSON
-	if !gjson.Valid(string(message.Payload)) {
+	stringMessage := string(message.Payload)
+	if !gjson.Valid(stringMessage) {
 		return ResponseMessage{true, "Invalid payload JSON format"}
 	}
 
+	modifiedMessage, err := sjson.Set(stringMessage, "timestamp", time.Now().Unix())
+	if err != nil {
+		return ResponseMessage{true, fmt.Sprintf("%s", err)}
+	}
+
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: message.Payload}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage)}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
@@ -61,7 +69,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	// send serialized message to a broker
 	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
-	log.Debugf("Send to queue: %v", brokerMessage)
+	log.Debugf("Send to queue: %s", brokerMessage)
 	handler.Broker.Chan <- brokerMessage
 
 	// increment processed errors counter
