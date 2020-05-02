@@ -20,7 +20,7 @@ jobs:
         docker login -u ${{ secrets.CUSTOM_DOCKER_USERNAME }} -p ${{ secrets.CUSTOM_DOCKER_PASSWORD }} ${{ secrets.CUSTOM_DOCKER_REGISTRY }}
         docker tag hawk-collector:${GITHUB_REF##*/} ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector:${GITHUB_REF##*/}
         docker push ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector
-        curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN_STAGE }}\"}" ${{ secrets.DEPLOY_ADDRESS_STAGE }}
+        curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.DEPLOY_ADDRESS }}
 
     - name: Push to Docker Hub
       if: ${GITHUB_REF##*/} == "prod"
