@@ -2,29 +2,28 @@ name: Docker Image CI
 
 on: [push]
 
+env:
+  DOCKER_REPO: ${{ secrets.DOCKER_USERNAME }}/hawk-collector
+
 jobs:
 
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag hawk-collector:${GITHUB_REF##*/}
+    - name: Build and push docker image
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ env.DOCKER_REPO }}
+        tag_with_ref: true
+        push: ${{ endsWith(github.ref, '/stage') || endsWith(github.ref, '/prod') }}
 
-    - name: Push to private registry
+    - name: Deploy stage
       if: ${GITHUB_REF##*/} == "stage"
       run: |
-        docker login -u ${{ secrets.CUSTOM_DOCKER_USERNAME }} -p ${{ secrets.CUSTOM_DOCKER_PASSWORD }} ${{ secrets.CUSTOM_DOCKER_REGISTRY }}
-        docker tag hawk-collector:${GITHUB_REF##*/} ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector:${GITHUB_REF##*/}
-        docker push ${{ secrets.CUSTOM_DOCKER_REGISTRY_NAME }}/hawk-collector
         curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.DEPLOY_ADDRESS }}
-
-    - name: Push to Docker Hub
-      if: ${GITHUB_REF##*/} == "prod"
-      run: |
-        docker login -u ${{ secrets.DOCKERHUB_DOCKER_USERNAME }} -p ${{ secrets.DOCKERHUB_DOCKER_PASSWORD }}
-        docker tag hawk-collector:${GITHUB_REF##*/} ${{ secrets.DOCKERHUB_DOCKER_USERNAME }}/hawk-collector:${GITHUB_REF##*/}
-        docker push ${{ secrets.DOCKERHUB_DOCKER_USERNAME }}/hawk-collector
