@@ -24,6 +24,6 @@ jobs:
         push: ${{ endsWith(github.ref, '/stage') || endsWith(github.ref, '/prod') }}
 
     - name: Deploy stage
-      if: ${GITHUB_REF##*/} == "stage"
+      if: endsWith(github.ref, '/stage')
       run: |
         curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.DEPLOY_ADDRESS }}
