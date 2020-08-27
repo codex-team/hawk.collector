@@ -26,4 +26,4 @@ jobs:
     - name: Deploy stage
       if: endsWith(github.ref, '/stage')
       run: |
-        curl --user ${{ secrets.DEPLOY_V2_AUTH }} ${{ secrets.DEPLOY_V2_ADDRESS }}?image=${{ env.DOCKER_REPO }}:stage
+        curl --user ${{ secrets.DEPLOY_HAWK_STAGE_AUTH }} ${{ secrets.DEPLOY_HAWK_STAGE_ADDRESS }}?image=${{ env.DOCKER_REPO }}:stage
