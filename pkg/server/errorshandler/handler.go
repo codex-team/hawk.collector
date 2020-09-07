@@ -11,6 +11,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
+	"math/rand"
 )
 
 // Handler of error messages
@@ -54,7 +55,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{true, "Invalid payload JSON format"}
 	}
 
-	modifiedMessage, err := sjson.Set(stringMessage, "timestamp", time.Now().Unix())
+	modifiedMessage, err := sjson.Set(stringMessage, "timestamp", time.Now().Unix() - rand.Int63n(1296000))
 	if err != nil {
 		return ResponseMessage{true, fmt.Sprintf("%s", err)}
 	}
