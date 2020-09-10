@@ -26,4 +26,4 @@ jobs:
     - name: Deploy stage
       if: endsWith(github.ref, '/stage')
       run: |
-        curl -X POST -H "Content-Type: application/json" --data "{\"branch\":\"${GITHUB_REF##*/}\",\"secret_token\":\"${{ secrets.DEPLOY_TOKEN }}\"}" ${{ secrets.DEPLOY_ADDRESS }}
+        curl --user ${{ secrets.DEPLOY_HAWK_STAGE_AUTH }} ${{ secrets.DEPLOY_HAWK_STAGE_ADDRESS }}?image=${{ env.DOCKER_REPO }}:stage
