@@ -14,3 +14,5 @@ jobs:
         with:
           token: ${{ secrets.HAWK_MONO_REPO_ACCESS_TOKEN }}
           event-type: my-event
+          repository: codex-team/hawk.mono
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
