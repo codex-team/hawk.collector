@@ -4,6 +4,7 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/metrics"
 	"github.com/codex-team/hawk.collector/pkg/server"
 	"os"
@@ -43,6 +44,18 @@ func (x *RunCommand) Execute(args []string) error {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(level)
 	log.Infof("✓ Log level set on %s", level)
+
+	// Initialize Hawk Cather
+	if cfg.HawkEnabled {
+		err = hawk.Init()
+		if err != nil {
+			log.Errorf("✗ Cannot initialize Hawk Catcher: %s", err)
+		} else {
+			go hawk.HawkCatcher.Run()
+			defer hawk.HawkCatcher.Stop()
+			log.Infof("✓ Hawk Catcher initialized")
+		}
+	}
 
 	// connect to AMQP broker with retries
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)

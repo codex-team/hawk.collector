@@ -37,4 +37,7 @@ type Config struct {
 
 	// Metrics listen host:port
 	MetricsListen string `env:"METRICS_LISTEN"`
+
+	// Whether to enable Hawk Catcher
+	HawkEnabled bool `env:"HAWK_ENABLED" defaultEnv:"false"`
 }
