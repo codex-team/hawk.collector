@@ -53,7 +53,7 @@ func (x *RunCommand) Execute(args []string) error {
 		} else {
 			go hawk.HawkCatcher.Run()
 			defer hawk.HawkCatcher.Stop()
-			log.Infof("✓ Hawk Catcher initialized")
+			log.Infof("✓ Hawk Catcher initialized on %s", hawk.HawkCatcher.GetURL())
 		}
 	}
 
