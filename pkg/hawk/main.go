@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/caarlos0/env"
 	hawkGo "github.com/codex-team/hawk.go"
+	log "github.com/sirupsen/logrus"
 )
 
 // Global catcher instance
@@ -37,4 +38,11 @@ func Init() error {
 	HawkCatcher = catcher
 
 	return nil
+}
+
+func Catch(incomingError error) {
+	err := HawkCatcher.Catch(incomingError)
+	if err != nil {
+		log.Errorf("Error during Hawk Catch: %s\n", err)
+	}
 }

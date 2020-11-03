@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
 	"github.com/codex-team/hawk.collector/pkg/server/sourcemapshandler"
 	"github.com/prometheus/client_golang/prometheus"
@@ -84,6 +85,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 			}
 
 			log.Errorf("Recovered after error: %s", err)
+			hawk.Catch(err)
 			ctx.Error("Bad request", fasthttp.StatusBadRequest)
 		}
 	}()

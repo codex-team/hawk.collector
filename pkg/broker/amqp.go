@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/streadway/amqp"
 	"log"
 )
@@ -36,12 +37,14 @@ func (connection *Connection) Init(url string, exchangeName string) error {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Printf("Failed to connect to RabbitMQ (%s): %s", url, err)
+		hawk.Catch(err)
 		return err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Printf("Failed to open a channel (%s): %s", url, err)
+		hawk.Catch(err)
 		return err
 	}
 
@@ -60,6 +63,7 @@ func (connection *Connection) Init(url string, exchangeName string) error {
 
 	if err != nil {
 		log.Printf("Failed to declare an exchange (%s): %s", url, err)
+		hawk.Catch(err)
 		return err
 	}
 
