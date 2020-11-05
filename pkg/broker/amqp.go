@@ -88,7 +88,7 @@ func (connection *Connection) Publish(msg Message) error {
 			Body:         msg.Payload,
 		})
 
-	cmd.FailOnError(err, fmt.Sprintf("Failed to publish a message to a %s queue: %s", connection.Queue))
+	cmd.FailOnError(err, fmt.Sprintf("Failed to publish a message to a %s queue", connection.Queue))
 
 	return err
 }

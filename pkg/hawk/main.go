@@ -41,6 +41,10 @@ func Init() error {
 }
 
 func Catch(incomingError error) {
+	if incomingError == nil {
+		return
+	}
+
 	err := HawkCatcher.Catch(incomingError)
 	if err != nil {
 		log.Errorf("Error during Hawk Catch: %s\n", err)
