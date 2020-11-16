@@ -12,8 +12,8 @@ github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEe
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+qY=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
-github.com/codex-team/hawk.go v1.0.3 h1:9rRvwIv/dJ1INJeii5GcOlRftwdLomrkGuVZEUOYmKc=
-github.com/codex-team/hawk.go v1.0.3/go.mod h1:bqIXLlBrgUKS+nZriukSlfvpCWlf40l1ljyYbBIj2kE=
+github.com/codex-team/hawk.go v1.0.4 h1:9y7ltMyv8G3iFzL3JMAd6WflObHMS6aWzFA+Fb3KlQ8=
+github.com/codex-team/hawk.go v1.0.4/go.mod h1:bqIXLlBrgUKS+nZriukSlfvpCWlf40l1ljyYbBIj2kE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
