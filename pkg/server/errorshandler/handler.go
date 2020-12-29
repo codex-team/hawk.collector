@@ -53,7 +53,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
-		return ResponseMessage{402, true, "Project has exceeded the event limit"}
+		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
 	// Validate if message is a valid JSON
