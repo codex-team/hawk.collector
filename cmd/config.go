@@ -43,5 +43,5 @@ type Config struct {
 
 	RedisURL      string `env:"REDIS_URL"`
 	RedisPassword string `env:"REDIS_PASSWORD"`
-	RedisSet      string `env:"REDIS_SET"`
+	RedisSet      string `env:"REDIS_DISABLED_PROJECT_SET"`
 }
