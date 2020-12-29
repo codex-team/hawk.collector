@@ -64,6 +64,7 @@ func (s *Server) Run() {
 		Broker:                         s.Broker,
 		JwtSecret:                      s.Config.JwtSecret,
 		MaxSourcemapCatcherMessageSize: s.Config.MaxSourcemapCatcherMessageSize,
+		RedisClient:                    s.RedisClient,
 	}
 
 	log.Infof("✓ collector starting on %s", s.Config.Listen)
