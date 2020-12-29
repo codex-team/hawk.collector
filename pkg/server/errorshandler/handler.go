@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 // Handler of error messages
@@ -22,6 +24,8 @@ type Handler struct {
 	MaxErrorCatcherMessageSize int
 
 	ErrorsProcessed prometheus.Counter
+
+	RedisClient *redis.RedisClient
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -46,6 +50,10 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	projectId, err := handler.DecodeJWT(message.Token)
 	if err != nil {
 		return ResponseMessage{true, fmt.Sprintf("%s", err)}
+	}
+
+	if handler.RedisClient.IsBlocked(projectId) {
+		return ResponseMessage{true, "ProjectID is banned"}
 	}
 
 	// Validate if message is a valid JSON

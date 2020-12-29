@@ -2,9 +2,11 @@ package server
 
 import (
 	"errors"
+
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
+	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
 	"github.com/codex-team/hawk.collector/pkg/server/sourcemapshandler"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,13 +27,15 @@ type Server struct {
 
 	// handler for sourcemap processing
 	SourcemapsHander sourcemapshandler.Handler
+	RedisClient      *redis.RedisClient
 }
 
 // New creates new server and initiates it with link to the broker and copy of configuration parameters
-func New(c cmd.Config, b *broker.Broker) *Server {
+func New(c cmd.Config, b *broker.Broker, r *redis.RedisClient) *Server {
 	return &Server{
-		Broker: b,
-		Config: c,
+		Broker:      b,
+		Config:      c,
+		RedisClient: r,
 	}
 }
 
@@ -51,6 +55,7 @@ func (s *Server) Run() {
 		JwtSecret:                  s.Config.JwtSecret,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
 		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
+		RedisClient:                s.RedisClient,
 	}
 
 	// handler of sourcemap messages via HTTP
