@@ -2,6 +2,7 @@ package errorshandler
 
 import (
 	"encoding/json"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -14,6 +15,7 @@ type CatcherMessage struct {
 
 // ResponseMessage represents response message to a client
 type ResponseMessage struct {
+	Code    int
 	Error   bool   `json:"error"`
 	Message string `json:"message"`
 }
