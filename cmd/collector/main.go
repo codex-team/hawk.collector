@@ -76,7 +76,7 @@ func (x *RunCommand) Execute(args []string) error {
 	redisClient := redis.New(ctx, cfg.RedisURL, cfg.RedisPassword, cfg.RedisSet)
 	err = redisClient.LoadSet()
 	if err != nil {
-		return err
+		log.Errorf("failed to load data from Redis")
 	}
 	done := make(chan struct{})
 	go func() {
@@ -86,8 +86,7 @@ func (x *RunCommand) Execute(args []string) error {
 			case <-ticker.C:
 				err := redisClient.LoadSet()
 				if err != nil {
-					log.Errorf("failed to load data from Redis: %s", err.Error())
-					return
+					log.Errorf("failed to load data from Redis")
 				}
 			case <-done:
 				return

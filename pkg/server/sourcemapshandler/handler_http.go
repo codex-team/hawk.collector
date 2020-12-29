@@ -3,6 +3,7 @@ package sourcemapshandler
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -28,7 +29,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 		sendAnswerHTTP(ctx, ResponseMessage{
 			Error:   true,
 			Message: "Request is too large",
-		}, 400)
+		})
 		return
 	}
 
@@ -36,7 +37,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	token := ctx.Request.Header.Peek("Authorization")
 	if len(token) < 8 {
 		log.Warnf("[sourcemaps] Missing header (len=%d): %s", len(token), token)
-		sendAnswerHTTP(ctx, ResponseMessage{true, "Provide Authorization header"}, 400)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Provide Authorization header"})
 		return
 	}
 	// cut "Bearer "
@@ -45,7 +46,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	form, err := ctx.MultipartForm()
 	if err != nil {
 		log.Warnf("[sourcemaps] Multipart form is not provided for token: %s", token)
-		sendAnswerHTTP(ctx, ResponseMessage{true, "Multipart form is not provided"}, 400)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Multipart form is not provided"})
 		return
 	}
 
@@ -55,18 +56,14 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	response := handler.process(form, string(token))
 	log.Debugf("[sourcemaps] Multipart form response: %s", response)
 
-	if response.Error {
-		sendAnswerHTTP(ctx, response, 400)
-	} else {
-		sendAnswerHTTP(ctx, response, 200)
-	}
+	sendAnswerHTTP(ctx, response)
 }
 
 // Send ResponseMessage in JSON with statusCode set
-func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage, code int) {
-	ctx.Response.SetStatusCode(code)
+func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage) {
+	ctx.Response.SetStatusCode(r.Code)
 
-	if code != 200 {
+	if r.Code != 200 {
 		hawk.Catch(errors.New(r.Message))
 	}
 
