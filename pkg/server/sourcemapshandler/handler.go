@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/codex-team/hawk.collector/pkg/broker"
-	"github.com/dgrijalva/jwt-go"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
+
+	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/redis"
+	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 )
 
 type Handler struct {
@@ -17,24 +19,29 @@ type Handler struct {
 	Broker                         *broker.Broker
 	MaxSourcemapCatcherMessageSize int
 	JwtSecret                      string
+	RedisClient                    *redis.RedisClient
 }
 
 func (handler *Handler) process(form *multipart.Form, token string) ResponseMessage {
 	releaseValues, ok := form.Value["release"]
 	if !ok {
-		return ResponseMessage{true, "Provide `release` form value"}
+		return ResponseMessage{400, true, "Provide `release` form value"}
 	}
 
 	log.Debugf("[sourcemaps] Got releaseValues: %s", releaseValues)
 
 	if len(releaseValues) != 1 {
-		return ResponseMessage{true, "Provide single `release` form value"}
+		return ResponseMessage{400, true, "Provide single `release` form value"}
 	}
 
 	// Validate JWT token
 	projectId, err := handler.DecodeJWT(token)
 	if err != nil {
-		return ResponseMessage{true, fmt.Sprintf("%s", err)}
+		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+	}
+
+	if handler.RedisClient.IsBlocked(projectId) {
+		return ResponseMessage{402, true, "Project has exceeded the event limit"}
 	}
 
 	// peek first release value
@@ -65,12 +72,12 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
-		return ResponseMessage{true, "Cannot encode message to JSON"}
+		return ResponseMessage{400, true, "Cannot encode message to JSON"}
 	}
 
 	// send serialized message to a broker
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.SourcemapExchange}
-	return ResponseMessage{false, "OK"}
+	return ResponseMessage{200, false, "OK"}
 }
 
 // DecodeJWT – check JWT and return projectId

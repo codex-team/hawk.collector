@@ -3,6 +3,7 @@ package errorshandler
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -13,9 +14,10 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
 		log.Warnf("Incoming request with size %d", ctx.Request.Header.ContentLength())
 		sendAnswerHTTP(ctx, ResponseMessage{
+			Code:    400,
 			Error:   true,
 			Message: "Request is too large",
-		}, 400)
+		})
 		return
 	}
 
@@ -26,20 +28,17 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	response := handler.process(body)
 	log.Debugf("Response: %s", response)
 
-	if response.Error {
-		sendAnswerHTTP(ctx, response, 400)
-		return
-	} else {
-		sendAnswerHTTP(ctx, response, 200)
-		return
-	}
+	sendAnswerHTTP(ctx, response)
 }
 
 // Send ResponseMessage in JSON with statusCode set
-func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage, code int) {
-	ctx.Response.SetStatusCode(code)
+func sendAnswerHTTP(ctx *fasthttp.RequestCtx, r ResponseMessage) {
+	if r.Message == "" {
+		return
+	}
+	ctx.Response.SetStatusCode(r.Code)
 
-	if code != 200 {
+	if r.Code != 200 {
 		hawk.Catch(errors.New(r.Message))
 	}
 
