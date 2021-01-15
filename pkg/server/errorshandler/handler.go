@@ -23,7 +23,8 @@ type Handler struct {
 	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int
 
-	ErrorsProcessed prometheus.Counter
+	ErrorsBlockedByLimit prometheus.Counter
+	ErrorsProcessed      prometheus.Counter
 
 	RedisClient *redis.RedisClient
 }
@@ -53,6 +54,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
+		handler.ErrorsBlockedByLimit.Inc()
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
