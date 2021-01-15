@@ -2,6 +2,7 @@ package errorshandler
 
 import (
 	"encoding/json"
+
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/fasthttp/websocket"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +33,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 			// process raw body via unified message handler
 			response := handler.process(message)
-			log.Debugf("Websocket response: %s", response)
+			log.Debugf("Websocket response: %s", response.Message)
 
 			if err = sendAnswerWebsocket(conn, messageType, response); err != nil {
 				log.Errorf("Websocket response: %v", err)
