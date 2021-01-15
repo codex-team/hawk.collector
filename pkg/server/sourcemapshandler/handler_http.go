@@ -54,7 +54,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 	// process raw body via unified sourcemap handler
 	response := handler.process(form, string(token))
-	log.Debugf("[sourcemaps] Multipart form response: %s", response)
+	log.Debugf("[sourcemaps] Multipart form response: %s", response.Message)
 
 	sendAnswerHTTP(ctx, response)
 }

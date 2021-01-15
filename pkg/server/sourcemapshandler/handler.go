@@ -90,7 +90,7 @@ func (handler *Handler) DecodeJWT(token string) (string, error) {
 		return "", errors.New("invalid JWT signature")
 	}
 
-	log.Debugf("Token data: %s", tokenData)
+	log.Debugf("Token data: %v", tokenData)
 	if tokenData.ProjectId == "" {
 		return "", errors.New("empty projectId")
 	}

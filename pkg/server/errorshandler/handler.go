@@ -23,7 +23,8 @@ type Handler struct {
 	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int
 
-	ErrorsProcessed prometheus.Counter
+	ErrorsBlockedByLimit prometheus.Counter
+	ErrorsProcessed      prometheus.Counter
 
 	RedisClient *redis.RedisClient
 }
@@ -53,6 +54,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
+		handler.ErrorsBlockedByLimit.Inc()
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
@@ -96,7 +98,7 @@ func (handler *Handler) DecodeJWT(token string) (string, error) {
 		return "", errors.New("invalid JWT signature")
 	}
 
-	log.Debugf("Token data: %s", tokenData)
+	log.Debugf("Token data: %v", tokenData)
 	if tokenData.ProjectId == "" {
 		return "", errors.New("empty projectId")
 	}

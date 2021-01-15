@@ -26,7 +26,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	log.Debugf("Headers: %s\nBody: %s", ctx.Request.Header.String(), body)
 
 	response := handler.process(body)
-	log.Debugf("Response: %s", response)
+	log.Debugf("Response: %s", response.Message)
 
 	sendAnswerHTTP(ctx, response)
 }

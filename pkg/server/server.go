@@ -54,6 +54,7 @@ func (s *Server) Run() {
 		Broker:                     s.Broker,
 		JwtSecret:                  s.Config.JwtSecret,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
+		ErrorsBlockedByLimit:       promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_blocked_by_limit_total"}),
 		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
 		RedisClient:                s.RedisClient,
 	}
