@@ -44,6 +44,9 @@ func Catch(incomingError error) {
 	if incomingError == nil {
 		return
 	}
+	if HawkCatcher == nil {
+		return
+	}
 
 	err := HawkCatcher.Catch(incomingError)
 	if err != nil {
