@@ -9,6 +9,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/go-redis/redis/v8"
+	log "github.com/sirupsen/logrus"
 )
 
 var ErrWrongKey = errors.New("key doesn't exist")
@@ -66,6 +67,9 @@ func (r *RedisClient) scan() error {
 	keys, _, err := r.rdb.SScan(r.ctx, r.setName, 0, "", 0).Result()
 	if err != nil {
 		return err
+	}
+	if len(keys) != len(r.data) {
+		log.Debugf("Banned projects list has been updated. Number of projects changed %d -> %d", len(r.data), len(keys))
 	}
 	r.data = keys
 	return nil
