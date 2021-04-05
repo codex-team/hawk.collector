@@ -1,5 +1,7 @@
 package cmd
 
+import "time"
+
 // Config is loaded via .env file
 type Config struct {
 	// AMQP full connection URI
@@ -43,5 +45,14 @@ type Config struct {
 
 	RedisURL      string `env:"REDIS_URL"`
 	RedisPassword string `env:"REDIS_PASSWORD"`
-	RedisSet      string `env:"REDIS_DISABLED_PROJECT_SET"`
+
+	RedisDisabledProjectsSet string `env:"REDIS_DISABLED_PROJECT_SET"`
+	RedisBlacklistIPsSet     string `env:"REDIS_BLACKLIST_IP_SET"`
+	RedisAllIPsMap           string `env:"REDIS_ALL_IPS_MAP"`
+	RedisCurrentPeriodMap    string `env:"REDIS_CURRENT_PERIOD_MAP"`
+
+	BlockedIDsLoad time.Duration `env:"BLOCKED_PROJECTS_UPDATE_PERIOD"`
+
+	BlacklistUpdatePeriod time.Duration `env:"BLACKLIST_UPDATE_PERIOD"`
+	BlacklistThreshold    int           `env:"BLACKLIST_THRESHOLD"`
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
@@ -79,6 +80,22 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("text/json; charset=utf8")
 
 	var err error
+	remoteIP := string(ctx.Request.Header.Peek(http.CanonicalHeaderKey("X-Forwarded-For")))
+	if len(remoteIP) > 0 {
+		isBlocked := s.RedisClient.CheckBlacklist(remoteIP)
+		if isBlocked {
+			ctx.Error("Too Many Requests", fasthttp.StatusTooManyRequests)
+			return
+		}
+
+		err = s.RedisClient.IncrementIP(remoteIP)
+		if err != nil {
+			log.Errorf("failed to increment IP in database: %s", err.Error())
+		}
+	} else {
+		log.Errorf("failed to get remote IP")
+	}
+
 	defer func() {
 		r := recover()
 		if r != nil {
