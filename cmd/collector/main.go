@@ -12,10 +12,8 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/periodic"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 // RunCommand - Run server in the production mode
@@ -78,7 +76,6 @@ func (x *RunCommand) Execute(args []string) error {
 		cfg.RedisBlacklistIPsSet,
 		cfg.RedisAllIPsMap,
 		cfg.RedisCurrentPeriodMap,
-		cfg.BlacklistThreshold,
 	)
 
 	err = redisClient.LoadBlockedIDs()
@@ -86,22 +83,18 @@ func (x *RunCommand) Execute(args []string) error {
 		log.Errorf("failed to load blocked IDs from Redis")
 	}
 
-	err = redisClient.LoadBlacklist()
-	if err != nil {
-		log.Errorf("failed to load IPs blacklist from Redis")
-	}
+	// start HTTP and websocket server
+	serverObj := server.New(cfg, brokerObj, redisClient, cfg.BlacklistThreshold, cfg.NotifyURL)
 
 	done := make(chan struct{})
 	go periodic.RunPeriodically(redisClient.LoadBlockedIDs, cfg.BlockedIDsLoad, done)
-	go periodic.RunPeriodically(redisClient.LoadBlacklist, cfg.BlacklistUpdatePeriod, done)
+	go periodic.RunPeriodically(serverObj.UpdateBlacklist, cfg.BlacklistUpdatePeriod, done)
 	defer close(done)
 	log.Info("✓ Redis client initialized")
 
 	// listen and serve prometheus metrics
 	go metrics.RunServer(cfg.MetricsListen)
 
-	// start HTTP and websocket server
-	serverObj := server.New(cfg, brokerObj, redisClient)
 	serverObj.Run()
 
 	return nil

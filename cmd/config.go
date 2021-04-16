@@ -55,4 +55,6 @@ type Config struct {
 
 	BlacklistUpdatePeriod time.Duration `env:"BLACKLIST_UPDATE_PERIOD"`
 	BlacklistThreshold    int           `env:"BLACKLIST_THRESHOLD"`
+
+	NotifyURL string `env:"NOTIFY_URL"`
 }

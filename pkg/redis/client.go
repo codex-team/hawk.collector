@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
@@ -25,10 +24,9 @@ type RedisClient struct {
 	ctx                  context.Context
 	blockedIDs           []string
 	blacklistIPs         []string
-	blacklistThreshold   int
 }
 
-func New(ctx context.Context, url, pass, blockedIDsSet, blacklistSet, IPsMap, currentMap string, threshold int) *RedisClient {
+func New(ctx context.Context, url, pass, blockedIDsSet, blacklistSet, IPsMap, currentMap string) *RedisClient {
 	return &RedisClient{
 		rdb: redis.NewClient(&redis.Options{
 			Addr:     url,
@@ -40,7 +38,6 @@ func New(ctx context.Context, url, pass, blockedIDsSet, blacklistSet, IPsMap, cu
 		allIPsMapName:        IPsMap,
 		currentPeriodMapName: currentMap,
 		blacklistSetName:     blacklistSet,
-		blacklistThreshold:   threshold,
 	}
 }
 
@@ -68,7 +65,7 @@ func (r *RedisClient) LoadBlockedIDs() error {
 }
 
 // LoadBlacklist loads list of blocked IP addresses from Redis.
-func (r *RedisClient) LoadBlacklist() error {
+func (r *RedisClient) LoadBlacklist() ([]string, []string, error) {
 	be := backoff.NewExponentialBackOff()
 	be.MaxElapsedTime = 3 * time.Minute
 	be.InitialInterval = 1 * time.Second
@@ -79,14 +76,14 @@ func (r *RedisClient) LoadBlacklist() error {
 	for {
 		d := b.NextBackOff()
 		if d == backoff.Stop {
-			return fmt.Errorf("failed to connect")
+			return nil, nil, fmt.Errorf("failed to connect")
 		}
-		err := r.updateBlacklist()
+		addrs, reqs, err := r.updateBlacklist()
 		if err != nil {
 			continue
 		}
 		<-time.After(d)
-		return nil
+		return addrs, reqs, nil
 	}
 }
 
@@ -107,43 +104,36 @@ func (r *RedisClient) load() error {
 }
 
 // updateBlacklist loads IPs blacklist and resets current period map.
-func (r *RedisClient) updateBlacklist() error {
+func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
 
 	ipAddrs, err := r.rdb.HKeys(r.ctx, r.currentPeriodMapName).Result()
 	if err != nil {
-		return err
-	}
-
-	if len(ipAddrs) > 0 {
-		requests, err := r.rdb.HVals(r.ctx, r.currentPeriodMapName).Result()
-		if err != nil {
-			return err
-		}
-
-		for i := 0; i < len(ipAddrs); i++ {
-			requestsQty, _ := strconv.Atoi(requests[i])
-			if requestsQty >= r.blacklistThreshold {
-				_, err = r.rdb.SAdd(r.ctx, r.blacklistSetName, ipAddrs[i]).Result()
-				if err != nil {
-					return err
-				}
-			}
-		}
-		cmdResult := r.rdb.Del(r.ctx, r.currentPeriodMapName)
-		if cmdResult.Err() != nil {
-			return cmdResult.Err()
-		}
+		return nil, nil, err
 	}
 
 	ips, _, err := r.rdb.SScan(r.ctx, r.blacklistSetName, 0, "", 0).Result()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	r.blacklistIPs = ips
 
-	return nil
+	if len(ipAddrs) > 0 {
+		requests, err := r.rdb.HVals(r.ctx, r.currentPeriodMapName).Result()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		cmdResult := r.rdb.Del(r.ctx, r.currentPeriodMapName)
+		if cmdResult.Err() != nil {
+			return nil, nil, cmdResult.Err()
+		}
+
+		return ipAddrs, requests, nil
+	}
+
+	return nil, nil, nil
 }
 
 // IsBlocked checks if the provided ID is blocked.
@@ -168,6 +158,9 @@ func (r *RedisClient) IncrementIP(ip string) error {
 
 // CheckBlacklist checks if the provided IP is in blacklist.
 func (r *RedisClient) CheckBlacklist(ip string) bool {
+	if len(r.blacklistIPs) == 0 {
+		return false
+	}
 	for _, blockedIP := range r.blacklistIPs {
 		if ip == blockedIP {
 			return true

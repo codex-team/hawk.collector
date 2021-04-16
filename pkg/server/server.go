@@ -2,9 +2,12 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/codex-team/hawk.collector/cmd"
+	"github.com/codex-team/hawk.collector/pkg/alerts"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/redis"
@@ -29,14 +32,19 @@ type Server struct {
 	// handler for sourcemap processing
 	SourcemapsHander sourcemapshandler.Handler
 	RedisClient      *redis.RedisClient
+
+	BlacklistThreshold int
+	NotifyURL          string
 }
 
 // New creates new server and initiates it with link to the broker and copy of configuration parameters
-func New(c cmd.Config, b *broker.Broker, r *redis.RedisClient) *Server {
+func New(c cmd.Config, b *broker.Broker, r *redis.RedisClient, threshold int, notifyURL string) *Server {
 	return &Server{
-		Broker:      b,
-		Config:      c,
-		RedisClient: r,
+		Broker:             b,
+		Config:             c,
+		RedisClient:        r,
+		BlacklistThreshold: threshold,
+		NotifyURL:          notifyURL,
 	}
 }
 
@@ -125,4 +133,27 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
 
+}
+
+func (s *Server) UpdateBlacklist() error {
+	ipAddrs, requests, err := s.RedisClient.LoadBlacklist()
+	if err != nil {
+		return err
+	}
+
+	if len(ipAddrs) == 0 || len(requests) == 0 {
+		return nil
+	}
+
+	for i := 0; i < len(ipAddrs); i++ {
+		requestsQty, _ := strconv.Atoi(requests[i])
+		if requestsQty >= s.BlacklistThreshold {
+			err = alerts.Notify(s.NotifyURL, fmt.Sprintf("Hawk Collector (production) ⚠️\n\nTo many messages from %s\n%s", ipAddrs[i], requests[i]))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
