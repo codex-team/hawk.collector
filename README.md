@@ -112,6 +112,16 @@ Basic configuration is taken from `.env` file.
 | MAX_ERROR_CATCHER_MESSAGE_SIZE | 25000 | Maximum available HTTP body size for error request (in bytes)            |
 | MAX_SOURCEMAP_CATCHER_MESSAGE_SIZE | 250000 | Maximum available HTTP body size for sourcemap request (in bytes)            |
 | LISTEN | localhost:3000 | Listen host and port            |
+| REDIS_URL | localhost:6379 | Redis address |
+| REDIS_PASSWORD | password | Redis password |
+| REDIS_DISABLED_PROJECT_SET | DisabledProjectsSet | Name of set that contains disabled projects IDs |
+| REDIS_BLACKLIST_IP_SET | BlacklistIPsSet | Name of set that contains IPs blacklist |
+| REDIS_ALL_IPS_MAP | AllIPsMap | Name of map with all IPs and their request counters |
+| REDIS_CURRENT_PERIOD_MAP | CurrentPeriodMap | Name of map that contains IPs and their request counters for current period |
+| BLOCKED_PROJECTS_UPDATE_PERIOD | 5s | Time interval to update blocked projects list |
+| BLACKLIST_UPDATE_PERIOD | 15s | Time interval to update blacklist |
+| BLACKLIST_THRESHOLD | 10000 | Amount of requests, which, when achieved, forces IP to get blocked |
+| NOTIFY_URL | https://notify.bot.ifmo.su/u/ABCD1234 | Address to send alerts in case of too many requests |
 
 # Test
 
