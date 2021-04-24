@@ -1,4 +1,4 @@
-package sourcemapshandler
+package releasehandler
 
 import (
 	"encoding/json"
@@ -9,23 +9,24 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// SourcemapFile represents file content and its name
-type SourcemapFile struct {
+// ReleaseFile represents file content and its name
+type ReleaseFile struct {
 	Name    string `json:"name"`
 	Payload []byte `json:"payload"`
 }
 
-// SourcemapMessage represents message structure for sending to queue
-type SourcemapMessage struct {
-	ProjectId string          `json:"projectId"`
-	Release   string          `json:"release"`
-	Files     []SourcemapFile `json:"files"`
+// ReleaseMessage represents message structure for sending to queue
+type ReleaseMessage struct {
+	ProjectId   string        `json:"projectId"`
+	Release     string        `json:"release"`
+	CatcherType string        `json:"catcherType"`
+	Files       []ReleaseFile `json:"files"`
 }
 
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
-	if ctx.Request.Header.ContentLength() > handler.MaxSourcemapCatcherMessageSize {
-		log.Warnf("[sourcemaps] Incoming request with size %d", ctx.Request.Header.ContentLength())
+	if ctx.Request.Header.ContentLength() > handler.MaxReleaseCatcherMessageSize {
+		log.Warnf("[release] Incoming request with size %d", ctx.Request.Header.ContentLength())
 		sendAnswerHTTP(ctx, ResponseMessage{
 			Error:   true,
 			Message: "Request is too large",
@@ -36,7 +37,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	// collect JWT token from HTTP Authorization header
 	token := ctx.Request.Header.Peek("Authorization")
 	if len(token) < 8 {
-		log.Warnf("[sourcemaps] Missing header (len=%d): %s", len(token), token)
+		log.Warnf("[release] Missing header (len=%d): %s", len(token), token)
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Provide Authorization header"})
 		return
 	}
@@ -45,16 +46,16 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 	form, err := ctx.MultipartForm()
 	if err != nil {
-		log.Warnf("[sourcemaps] Multipart form is not provided for token: %s", token)
+		log.Warnf("[release] Multipart form is not provided for token: %s", token)
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Multipart form is not provided"})
 		return
 	}
 
-	log.Debugf("[sourcemaps] Multipart form with token: %s", token)
+	log.Debugf("[release] Multipart form with token: %s", token)
 
 	// process raw body via unified sourcemap handler
 	response := handler.process(form, string(token))
-	log.Debugf("[sourcemaps] Multipart form response: %s", response.Message)
+	log.Debugf("[release] Multipart form response: %s", response.Message)
 
 	sendAnswerHTTP(ctx, response)
 }

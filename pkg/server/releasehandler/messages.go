@@ -1,4 +1,4 @@
-package sourcemapshandler
+package releasehandler
 
 import "github.com/dgrijalva/jwt-go"
 

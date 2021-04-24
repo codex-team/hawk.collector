@@ -1,4 +1,4 @@
-package sourcemapshandler
+package releasehandler
 
 import (
 	"bytes"
@@ -15,23 +15,37 @@ import (
 )
 
 type Handler struct {
-	SourcemapExchange              string
-	Broker                         *broker.Broker
-	MaxSourcemapCatcherMessageSize int
-	JwtSecret                      string
-	RedisClient                    *redis.RedisClient
+	ReleaseExchange              string
+	Broker                       *broker.Broker
+	MaxReleaseCatcherMessageSize int
+	JwtSecret                    string
+	RedisClient                  *redis.RedisClient
+}
+
+// getSingleFormValue - returns the only value of the form or generates error
+func getSingleFormValue(form *multipart.Form, key string) (error, string) {
+	values, ok := form.Value[key]
+	if !ok {
+		return errors.New(fmt.Sprintf("provide `%s` form value", key)), ""
+	}
+
+	log.Debugf("[release] Got releaseValues: %s", values)
+
+	if len(values) != 1 {
+		return errors.New(fmt.Sprintf("provide single `%s` form value", key)), ""
+	}
+
+	return nil, values[0]
 }
 
 func (handler *Handler) process(form *multipart.Form, token string) ResponseMessage {
-	releaseValues, ok := form.Value["release"]
-	if !ok {
-		return ResponseMessage{400, true, "Provide `release` form value"}
+	err, release := getSingleFormValue(form, "release")
+	if err != nil {
+		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
 	}
-
-	log.Debugf("[sourcemaps] Got releaseValues: %s", releaseValues)
-
-	if len(releaseValues) != 1 {
-		return ResponseMessage{400, true, "Provide single `release` form value"}
+	err, catcherType := getSingleFormValue(form, "catcherType")
+	if err != nil {
+		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
 	}
 
 	// Validate JWT token
@@ -41,13 +55,10 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
-		return ResponseMessage{402, true, "Project has exceeded the event limit"}
+		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
-	// peek first release value
-	release := releaseValues[0]
-
-	var files []SourcemapFile
+	var files []ReleaseFile
 
 	for _, v := range form.File { // for each File part in multipart form
 		for _, header := range v { // for each MIME-style header
@@ -62,13 +73,13 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 			}
 
 			// append file name and content to files array
-			log.Debugf("[sourcemaps] Got filename: %s", header.Filename)
-			files = append(files, SourcemapFile{Name: header.Filename, Payload: buf.Bytes()})
+			log.Debugf("[release] Got filename: %s", header.Filename)
+			files = append(files, ReleaseFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
 
 	// convert message to JSON format
-	messageToSend := SourcemapMessage{ProjectId: projectId, Files: files, Release: release}
+	messageToSend := ReleaseMessage{ProjectId: projectId, Files: files, Release: release, CatcherType: catcherType}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
@@ -76,7 +87,7 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 
 	// send serialized message to a broker
-	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.SourcemapExchange}
+	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.ReleaseExchange}
 	return ResponseMessage{200, false, "OK"}
 }
 
