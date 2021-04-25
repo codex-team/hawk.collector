@@ -47,6 +47,10 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	if err != nil {
 		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
 	}
+	err, commits := getSingleFormValue(form, "commits")
+	if err != nil {
+		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+	}
 
 	// Validate JWT token
 	projectId, err := handler.DecodeJWT(token)
@@ -79,7 +83,7 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 
 	// convert message to JSON format
-	messageToSend := ReleaseMessage{ProjectId: projectId, Files: files, Release: release, CatcherType: catcherType}
+	messageToSend := ReleaseMessage{ProjectId: projectId, Files: files, Release: release, CatcherType: catcherType, Commits: commits}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)

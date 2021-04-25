@@ -20,6 +20,7 @@ type ReleaseMessage struct {
 	ProjectId   string        `json:"projectId"`
 	Release     string        `json:"release"`
 	CatcherType string        `json:"catcherType"`
+	Commits     string        `json:"commits"`
 	Files       []ReleaseFile `json:"files"`
 }
 
