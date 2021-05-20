@@ -20,4 +20,4 @@ require (
 	github.com/valyala/fasthttp v1.25.0
 )
 
-go 1.13
+go 1.16
