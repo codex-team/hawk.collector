@@ -2,7 +2,8 @@ package hawk
 
 import (
 	"errors"
-	"github.com/caarlos0/env"
+
+	"github.com/caarlos0/env/v6"
 	hawkGo "github.com/codex-team/hawk.go"
 	log "github.com/sirupsen/logrus"
 )
