@@ -12,6 +12,7 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 type Handler struct {
@@ -21,6 +22,8 @@ type Handler struct {
 	JwtSecret                    string
 	RedisClient                  *redis.RedisClient
 }
+
+const AddReleaseType string = "add-release"
 
 // getSingleFormValue - returns the only value of the form or generates error
 func getSingleFormValue(form *multipart.Form, key string) (error, string) {
@@ -82,8 +85,14 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 		}
 	}
 
+	// Validate if message is a valid JSON
+	stringMessage := string(commits)
+	if !gjson.Valid(stringMessage) {
+		return ResponseMessage{400, true, "Invalid commits JSON format"}
+	}
+
 	// convert message to JSON format
-	messageToSend := ReleaseMessage{ProjectId: projectId, Files: files, Release: release, CatcherType: catcherType, Commits: commits}
+	messageToSend := ReleaseMessage{ProjectId: projectId, Type: AddReleaseType, Payload: ReleaseMessagePayload{Files: files, Release: release, CatcherType: catcherType, Commits: []byte(commits)}}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)

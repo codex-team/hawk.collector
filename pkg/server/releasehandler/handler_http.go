@@ -9,21 +9,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// ReleaseFile represents file content and its name
-type ReleaseFile struct {
-	Name    string `json:"name"`
-	Payload []byte `json:"payload"`
-}
-
-// ReleaseMessage represents message structure for sending to queue
-type ReleaseMessage struct {
-	ProjectId   string        `json:"projectId"`
-	Release     string        `json:"release"`
-	CatcherType string        `json:"catcherType"`
-	Commits     string        `json:"commits"`
-	Files       []ReleaseFile `json:"files"`
-}
-
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	if ctx.Request.Header.ContentLength() > handler.MaxReleaseCatcherMessageSize {
