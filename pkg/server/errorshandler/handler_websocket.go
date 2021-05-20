@@ -2,6 +2,7 @@ package errorshandler
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/fasthttp/websocket"
@@ -44,7 +45,10 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 	// log if connection is closed ungracefully
 	if err != nil {
-		hawk.Catch(err)
+		var handshakeError *websocket.HandshakeError
+		if errors.As(err, &handshakeError) {
+			hawk.Catch(err)
+		}
 		log.Errorf("Websocket error: %v", err)
 	}
 }
