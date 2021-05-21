@@ -44,7 +44,10 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 	// log if connection is closed ungracefully
 	if err != nil {
-		hawk.Catch(err)
+		// Do not catch WebSocket upgrade erros, since it's usually client malformed requests
+		if _, ok := err.(websocket.HandshakeError); !ok {
+			hawk.Catch(err)
+		}
 		log.Errorf("Websocket error: %v", err)
 	}
 }
