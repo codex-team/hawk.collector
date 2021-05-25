@@ -3,23 +3,18 @@ package collector
 import (
 	"context"
 	"os"
-	"time"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/metrics"
+	"github.com/codex-team/hawk.collector/pkg/periodic"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
-
-// loadInterval is time interval to load data from Redis
-const loadInterval = 5 * time.Minute
 
 // RunCommand - Run server in the production mode
 type RunCommand struct {
@@ -73,34 +68,33 @@ func (x *RunCommand) Execute(args []string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	redisClient := redis.New(ctx, cfg.RedisURL, cfg.RedisPassword, cfg.RedisSet)
-	err = redisClient.LoadSet()
+
+	redisClient := redis.New(ctx,
+		cfg.RedisURL,
+		cfg.RedisPassword,
+		cfg.RedisDisabledProjectsSet,
+		cfg.RedisBlacklistIPsSet,
+		cfg.RedisAllIPsMap,
+		cfg.RedisCurrentPeriodMap,
+	)
+
+	err = redisClient.LoadBlockedIDs()
 	if err != nil {
-		log.Errorf("failed to load data from Redis")
+		log.Errorf("failed to load blocked IDs from Redis")
 	}
+
+	// start HTTP and websocket server
+	serverObj := server.New(cfg, brokerObj, redisClient, cfg.BlacklistThreshold, cfg.NotifyURL)
+
 	done := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(loadInterval)
-		for {
-			select {
-			case <-ticker.C:
-				err := redisClient.LoadSet()
-				if err != nil {
-					log.Errorf("failed to load data from Redis")
-				}
-			case <-done:
-				return
-			}
-		}
-	}()
+	go periodic.RunPeriodically(redisClient.LoadBlockedIDs, cfg.BlockedIDsLoad, done)
+	go periodic.RunPeriodically(serverObj.UpdateBlacklist, cfg.BlacklistUpdatePeriod, done)
 	defer close(done)
 	log.Info("✓ Redis client initialized")
 
 	// listen and serve prometheus metrics
 	go metrics.RunServer(cfg.MetricsListen)
 
-	// start HTTP and websocket server
-	serverObj := server.New(cfg, brokerObj, redisClient)
 	serverObj.Run()
 
 	return nil
