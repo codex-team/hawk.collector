@@ -27,10 +27,9 @@ type ReleaseFile struct {
 
 // ReleaseMessagePayload represents payload structure of the message for sending to queue
 type ReleaseMessagePayload struct {
-	Release     string          `json:"release"`
-	CatcherType string          `json:"catcherType"`
-	Commits     json.RawMessage `json:"commits"`
-	Files       []ReleaseFile   `json:"files"`
+	Release string          `json:"release"`
+	Commits json.RawMessage `json:"commits"`
+	Files   []ReleaseFile   `json:"files"`
 }
 
 // ReleaseMessage represents message structure for sending to queue
