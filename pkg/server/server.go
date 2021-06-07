@@ -12,7 +12,7 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
-	"github.com/codex-team/hawk.collector/pkg/server/sourcemapshandler"
+	"github.com/codex-team/hawk.collector/pkg/server/releasehandler"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
@@ -29,9 +29,9 @@ type Server struct {
 	// handler for errors processing
 	ErrorsHandler errorshandler.Handler
 
-	// handler for sourcemap processing
-	SourcemapsHander sourcemapshandler.Handler
-	RedisClient      *redis.RedisClient
+	// handler for release processing
+	ReleaseHandler releasehandler.Handler
+	RedisClient    *redis.RedisClient
 
 	BlacklistThreshold int
 	NotifyURL          string
@@ -69,12 +69,12 @@ func (s *Server) Run() {
 	}
 
 	// handler of sourcemap messages via HTTP
-	s.SourcemapsHander = sourcemapshandler.Handler{
-		SourcemapExchange:              s.Config.SourcemapExchange,
-		Broker:                         s.Broker,
-		JwtSecret:                      s.Config.JwtSecret,
-		MaxSourcemapCatcherMessageSize: s.Config.MaxSourcemapCatcherMessageSize,
-		RedisClient:                    s.RedisClient,
+	s.ReleaseHandler = releasehandler.Handler{
+		ReleaseExchange:              s.Config.ReleaseExchange,
+		Broker:                       s.Broker,
+		JwtSecret:                    s.Config.JwtSecret,
+		MaxReleaseCatcherMessageSize: s.Config.MaxReleaseCatcherMessageSize,
+		RedisClient:                  s.RedisClient,
 	}
 
 	log.Infof("✓ collector starting on %s", s.Config.Listen)
@@ -127,8 +127,8 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		s.ErrorsHandler.HandleHTTP(ctx)
 	case "/ws":
 		s.ErrorsHandler.HandleWebsocket(ctx)
-	case "/sourcemap":
-		s.SourcemapsHander.HandleHTTP(ctx)
+	case "/release":
+		s.ReleaseHandler.HandleHTTP(ctx)
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
