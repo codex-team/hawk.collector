@@ -68,11 +68,20 @@ JSON example
 The following structure represents data got through the HTTP request (`POST` request to `'/release'` with `Content-Type: multipart/form-data`)
 
 ### Form values
-| name         | type            | description                                         |
-| ------------ | --------------- | --------------------------------------------------- |
-| release      | string          | Release name                                        |
-| file         | multipart       | Content of the binary file                          |
-| commits      | raw JSON        | Suspected commits                                   |
+| name         | type                       | description                                         |
+| ------------ | -------------------------- | --------------------------------------------------- |
+| release      | string                     | Release name                                        |
+| file         | multipart                  | Content of the binary file                          |
+| commits      | commitMessage (optional)   | Suspected commits                                   |
+
+**commitMessage** has the following format:
+
+| name         | type       | description                                         |
+| ------------ | ---------- | --------------------------------------------------- |
+| hash         | string     | Commit hash                                         |
+| title        | string     | Commit description                                  |
+| author       | string     | Commit author                                       |
+| date         | string     | Commit date                                         |   
 
 Authentication is made via `bearer` token.
 
