@@ -144,7 +144,7 @@ Basic configuration is taken from `.env` file.
 | ------- | ------ | ------------------------- |
 | BROKER_URL   | amqp://guest:guest@localhost:5672/   | Connection URI to RabbitMQ  |
 | EXCHANGE | errors | Basic exchange for errors             |
-| SOURCEMAP_EXCHANGE | release/javascript | Basic exchange for sourcemaps            |
+| RELEASE_EXCHANGE | release | Basic exchange for releases            |
 | RETRY_NUMBER | 10 | Try to establish connection with broker for N times            |
 | RETRY_INTERVAL | 4 | Wait N seconds before retry to establish connection with broker            |
 | JWT_SECRET | qwerty | JWT token secret key            |
