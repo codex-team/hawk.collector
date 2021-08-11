@@ -29,13 +29,13 @@ const AddReleaseType string = "add-release"
 func getSingleFormValue(form *multipart.Form, key string) (error, string) {
 	values, ok := form.Value[key]
 	if !ok {
-		return errors.New(fmt.Sprintf("provide `%s` form value", key)), ""
+		return fmt.Errorf("provide `%s` form value", key), ""
 	}
 
 	log.Debugf("[release] Got releaseValues: %s", values)
 
 	if len(values) != 1 {
-		return errors.New(fmt.Sprintf("provide single `%s` form value", key)), ""
+		return fmt.Errorf("provide single `%s` form value", key), ""
 	}
 
 	return nil, values[0]
