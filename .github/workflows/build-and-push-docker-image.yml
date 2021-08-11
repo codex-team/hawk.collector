@@ -19,5 +19,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: ${{ env.DOCKER_REPO }}
           tag_with_ref: true
-          dockerfile: docker/Dockerfile.prod
           push: ${{ endsWith(github.ref, '/stage') || endsWith(github.ref, '/prod') }}
