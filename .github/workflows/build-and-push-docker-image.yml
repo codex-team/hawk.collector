@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build and push docker image
 
 on: [push]
 
@@ -8,9 +8,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-20.04
-
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Build and push docker image
         uses: docker/build-push-action@v1
@@ -20,8 +20,3 @@ jobs:
           repository: ${{ env.DOCKER_REPO }}
           tag_with_ref: true
           push: ${{ endsWith(github.ref, '/stage') || endsWith(github.ref, '/prod') }}
-
-      - name: Deploy stage
-        if: endsWith(github.ref, '/stage')
-        run: |
-          curl --user ${{ secrets.DEPLOY_HAWK_STAGE_AUTH }} ${{ secrets.DEPLOY_HAWK_STAGE_ADDRESS }}?image=${{ env.DOCKER_REPO }}:stage

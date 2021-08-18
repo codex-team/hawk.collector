@@ -2,6 +2,7 @@ package broker
 
 import (
 	"github.com/codex-team/hawk.collector/cmd"
+	log "github.com/sirupsen/logrus"
 )
 
 // Message represents message payload sent to the Queue and AMQP route
@@ -30,6 +31,7 @@ func New(url, exchange string) *Broker {
 func (broker *Broker) Init() {
 	go func(conn Connection, ch <-chan Message) {
 		for msg := range ch {
+			log.Debugf("Send message to RabbitMQ: %s", msg)
 			_ = conn.Publish(msg)
 		}
 	}(broker.Connection, broker.Chan)
