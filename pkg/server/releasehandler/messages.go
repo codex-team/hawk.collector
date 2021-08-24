@@ -28,8 +28,8 @@ type ReleaseFile struct {
 // ReleaseMessagePayload represents payload structure of the message for sending to queue
 type ReleaseMessagePayload struct {
 	Release string          `json:"release"`
-	Commits json.RawMessage `json:"commits"`
-	Files   []ReleaseFile   `json:"files"`
+	Commits json.RawMessage `json:"commits,omitempty"`
+	Files   []ReleaseFile   `json:"files,omitempty"`
 }
 
 // ReleaseMessage represents message structure for sending to queue
