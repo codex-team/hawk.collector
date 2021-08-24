@@ -25,31 +25,12 @@ type Handler struct {
 
 const AddReleaseType string = "add-release"
 
-// getSingleFormValue - returns the only value of the form or generates error
-func getSingleFormValue(form *multipart.Form, key string) (error, string) {
-	values, ok := form.Value[key]
-	if !ok {
-		return fmt.Errorf("provide `%s` form value", key), ""
-	}
-
-	log.Debugf("[release] Got releaseValues: %s", values)
-
-	if len(values) != 1 {
-		return fmt.Errorf("provide single `%s` form value", key), ""
-	}
-
-	return nil, values[0]
-}
-
 func (handler *Handler) process(form *multipart.Form, token string) ResponseMessage {
 	err, release := getSingleFormValue(form, "release")
 	if err != nil {
 		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
 	}
-	err, commits := getSingleFormValue(form, "commits")
-	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
-	}
+	_, commits := getSingleFormValue(form, "commits")
 
 	// Validate JWT token
 	projectId, err := handler.DecodeJWT(token)
@@ -81,10 +62,11 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 		}
 	}
 
-	// Validate if message is a valid JSON
-	stringMessage := string(commits)
-	if !gjson.Valid(stringMessage) {
-		return ResponseMessage{400, true, "Invalid commits JSON format"}
+	// Validate if commits is a valid JSON (if not empty)
+	if commits != "" {
+		if !gjson.Valid(commits) {
+			return ResponseMessage{400, true, "Invalid commits JSON format"}
+		}
 	}
 
 	// convert message to JSON format

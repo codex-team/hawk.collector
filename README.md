@@ -71,7 +71,7 @@ The following structure represents data got through the HTTP request (`POST` req
 | name         | type                       | description                                         |
 | ------------ | -------------------------- | --------------------------------------------------- |
 | release      | string                     | Release name                                        |
-| file         | multipart                  | Content of the binary file                          |
+| file         | multipart (optional)       | Content of the binary file                          |
 | commits      | commitMessage (optional)   | Suspected commits                                   |
 
 **commitMessage** has the following format:
