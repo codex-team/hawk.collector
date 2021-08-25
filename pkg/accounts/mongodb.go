@@ -26,7 +26,7 @@ type AccountsMongoDBClient struct {
 func New(connectionURI string) *AccountsMongoDBClient {
 	uriPath, err := url.Parse(connectionURI)
 	if err != nil {
-		log.Fatalf("Incorrect MongoDB connection URI (%s): %s", connectionURI, err)
+		log.Fatalf("Incorrect MongoDB connection URI: %s", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout)
@@ -40,7 +40,9 @@ func New(connectionURI string) *AccountsMongoDBClient {
 		log.Fatalf("MongoDB ping error: %s", err)
 	}
 
-	log.Debugf("✓ MongoDB accounts client initialized via %s", connectionURI)
+	// Log connection URL without credentials
+	uriPath.User = &url.Userinfo{}
+	log.Infof("✓ MongoDB accounts client initialized via %s", connectionURI)
 
 	return &AccountsMongoDBClient{
 		mdb:      client,

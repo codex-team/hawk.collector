@@ -2,8 +2,6 @@ package errorshandler
 
 import (
 	"encoding/json"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 // ResponseMessage represents incoming message from a client
@@ -24,10 +22,4 @@ type ResponseMessage struct {
 type BrokerMessage struct {
 	ProjectId string          `json:"projectId"`
 	Payload   json.RawMessage `json:"payload"`
-}
-
-// Data of JWT token
-type JWTClaim struct {
-	ProjectId string `json:"projectId"`
-	jwt.StandardClaims
 }
