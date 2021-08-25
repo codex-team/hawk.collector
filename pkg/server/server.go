@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
+
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/alerts"
 	"github.com/codex-team/hawk.collector/pkg/broker"
@@ -30,21 +32,23 @@ type Server struct {
 	ErrorsHandler errorshandler.Handler
 
 	// handler for release processing
-	ReleaseHandler releasehandler.Handler
-	RedisClient    *redis.RedisClient
+	ReleaseHandler        releasehandler.Handler
+	RedisClient           *redis.RedisClient
+	AccountsMongoDBClient *accounts.AccountsMongoDBClient
 
 	BlacklistThreshold int
 	NotifyURL          string
 }
 
 // New creates new server and initiates it with link to the broker and copy of configuration parameters
-func New(c cmd.Config, b *broker.Broker, r *redis.RedisClient, threshold int, notifyURL string) *Server {
+func New(configuration cmd.Config, brokerClient *broker.Broker, redisClient *redis.RedisClient, accountsMongoDBClient *accounts.AccountsMongoDBClient, threshold int, notifyURL string) *Server {
 	return &Server{
-		Broker:             b,
-		Config:             c,
-		RedisClient:        r,
-		BlacklistThreshold: threshold,
-		NotifyURL:          notifyURL,
+		Broker:                brokerClient,
+		Config:                configuration,
+		RedisClient:           redisClient,
+		AccountsMongoDBClient: accountsMongoDBClient,
+		BlacklistThreshold:    threshold,
+		NotifyURL:             notifyURL,
 	}
 }
 
@@ -61,20 +65,20 @@ func (s *Server) Run() {
 	// handler of error messages via HTTP and websocket protocols
 	s.ErrorsHandler = errorshandler.Handler{
 		Broker:                     s.Broker,
-		JwtSecret:                  s.Config.JwtSecret,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
 		ErrorsBlockedByLimit:       promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_blocked_by_limit_total"}),
 		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
 		RedisClient:                s.RedisClient,
+		AccountsMongoDBClient:      s.AccountsMongoDBClient,
 	}
 
 	// handler of sourcemap messages via HTTP
 	s.ReleaseHandler = releasehandler.Handler{
 		ReleaseExchange:              s.Config.ReleaseExchange,
 		Broker:                       s.Broker,
-		JwtSecret:                    s.Config.JwtSecret,
 		MaxReleaseCatcherMessageSize: s.Config.MaxReleaseCatcherMessageSize,
 		RedisClient:                  s.RedisClient,
+		AccountsMongoDBClient:        s.AccountsMongoDBClient,
 	}
 
 	log.Infof("✓ collector starting on %s", s.Config.Listen)

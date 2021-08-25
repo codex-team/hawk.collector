@@ -19,9 +19,6 @@ type Config struct {
 	// Interval between retries for connection to AMQP server during initialization
 	RetryInterval uint `env:"RETRY_INTERVAL"`
 
-	// JWT secret
-	JwtSecret string `env:"JWT_SECRET"`
-
 	// Maximum HTTP body size (global)
 	MaxRequestBodySize int `env:"MAX_REQUEST_BODY_SIZE"`
 
@@ -45,6 +42,10 @@ type Config struct {
 
 	RedisURL      string `env:"REDIS_URL"`
 	RedisPassword string `env:"REDIS_PASSWORD"`
+
+	// MongoDB connection URI to the accounts database
+	AccountsMongoDBURI string        `env:"ACCOUNTS_MONGODB_URI"`
+	TokenUpdatePeriod  time.Duration `env:"TOKEN_UPDATE_PERIOD"`
 
 	RedisDisabledProjectsSet string `env:"REDIS_DISABLED_PROJECT_SET"`
 	RedisBlacklistIPsSet     string `env:"REDIS_BLACKLIST_IP_SET"`

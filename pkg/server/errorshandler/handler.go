@@ -2,13 +2,13 @@ package errorshandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
+
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/redis"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -26,7 +26,8 @@ type Handler struct {
 	ErrorsBlockedByLimit prometheus.Counter
 	ErrorsProcessed      prometheus.Counter
 
-	RedisClient *redis.RedisClient
+	RedisClient           *redis.RedisClient
+	AccountsMongoDBClient *accounts.AccountsMongoDBClient
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -47,11 +48,12 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "CatcherType is empty"}
 	}
 
-	// Validate JWT token
-	projectId, err := handler.DecodeJWT(message.Token)
-	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[message.Token]
+	if !ok {
+		log.Debugf("Token %s is not in the accounts cache", message.Token)
+		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", message.Token)}
 	}
+	log.Debugf("Found project with ID %s for integration token %s", projectId, message.Token)
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
@@ -86,22 +88,4 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	handler.ErrorsProcessed.Inc()
 
 	return ResponseMessage{200, false, "OK"}
-}
-
-// DecodeJWT – check JWT and return projectId
-func (handler *Handler) DecodeJWT(token string) (string, error) {
-	var tokenData JWTClaim
-	_, err := jwt.ParseWithClaims(token, &tokenData, func(token *jwt.Token) (interface{}, error) {
-		return []byte(handler.JwtSecret), nil
-	})
-	if err != nil {
-		return "", errors.New("invalid JWT signature")
-	}
-
-	log.Debugf("Token data: %v", tokenData)
-	if tokenData.ProjectId == "" {
-		return "", errors.New("empty projectId")
-	}
-
-	return tokenData.ProjectId, nil
 }
