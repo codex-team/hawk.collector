@@ -4,7 +4,6 @@ require (
 	github.com/caarlos0/env/v6 v6.6.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/codex-team/hawk.go v1.0.5
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fasthttp/websocket v1.4.3
 	github.com/go-redis/redis/v8 v8.8.3
 	github.com/golang/protobuf v1.5.2 // indirect

@@ -19,9 +19,6 @@ type Config struct {
 	// Interval between retries for connection to AMQP server during initialization
 	RetryInterval uint `env:"RETRY_INTERVAL"`
 
-	// JWT secret
-	JwtSecret string `env:"JWT_SECRET"`
-
 	// Maximum HTTP body size (global)
 	MaxRequestBodySize int `env:"MAX_REQUEST_BODY_SIZE"`
 

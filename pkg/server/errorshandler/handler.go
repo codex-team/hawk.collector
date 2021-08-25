@@ -2,7 +2,6 @@ package errorshandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/redis"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -90,22 +88,4 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	handler.ErrorsProcessed.Inc()
 
 	return ResponseMessage{200, false, "OK"}
-}
-
-// DecodeJWT – check JWT and return projectId
-func (handler *Handler) DecodeJWT(token string) (string, error) {
-	var tokenData JWTClaim
-	_, err := jwt.ParseWithClaims(token, &tokenData, func(token *jwt.Token) (interface{}, error) {
-		return []byte(handler.JwtSecret), nil
-	})
-	if err != nil {
-		return "", errors.New("invalid JWT signature")
-	}
-
-	log.Debugf("Token data: %v", tokenData)
-	if tokenData.ProjectId == "" {
-		return "", errors.New("empty projectId")
-	}
-
-	return tokenData.ProjectId, nil
 }
