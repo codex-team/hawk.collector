@@ -46,6 +46,10 @@ type Config struct {
 	RedisURL      string `env:"REDIS_URL"`
 	RedisPassword string `env:"REDIS_PASSWORD"`
 
+	// MongoDB connection URI to the accounts database
+	AccountsMongoDBURI string        `env:"ACCOUNTS_MONGODB_URI"`
+	TokenUpdatePeriod  time.Duration `env:"TOKEN_UPDATE_PERIOD"`
+
 	RedisDisabledProjectsSet string `env:"REDIS_DISABLED_PROJECT_SET"`
 	RedisBlacklistIPsSet     string `env:"REDIS_BLACKLIST_IP_SET"`
 	RedisAllIPsMap           string `env:"REDIS_ALL_IPS_MAP"`

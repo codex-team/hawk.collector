@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
+
 	"github.com/caarlos0/env/v6"
 	"github.com/codex-team/hawk.collector/cmd"
 	"github.com/codex-team/hawk.collector/pkg/broker"
@@ -82,6 +84,10 @@ func (x *RunCommand) Execute(args []string) error {
 	if err != nil {
 		log.Errorf("failed to load blocked IDs from Redis")
 	}
+
+	// connect to accounts MongoDB
+	accountsClient := accounts.New(cfg.AccountsMongoDBURI)
+	go accountsClient.Run(cfg.TokenUpdatePeriod)
 
 	// start HTTP and websocket server
 	serverObj := server.New(cfg, brokerObj, redisClient, cfg.BlacklistThreshold, cfg.NotifyURL)
