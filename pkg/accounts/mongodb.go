@@ -20,7 +20,7 @@ type AccountsMongoDBClient struct {
 	mdb         *mongo.Client
 	ctx         context.Context
 	database    string
-	validTokens []string
+	ValidTokens map[string]string
 }
 
 func New(connectionURI string) *AccountsMongoDBClient {

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
+
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/dgrijalva/jwt-go"
@@ -26,7 +28,8 @@ type Handler struct {
 	ErrorsBlockedByLimit prometheus.Counter
 	ErrorsProcessed      prometheus.Counter
 
-	RedisClient *redis.RedisClient
+	RedisClient           *redis.RedisClient
+	AccountsMongoDBClient *accounts.AccountsMongoDBClient
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -47,11 +50,12 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "CatcherType is empty"}
 	}
 
-	// Validate JWT token
-	projectId, err := handler.DecodeJWT(message.Token)
-	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[message.Token]
+	if !ok {
+		log.Debugf("Token %s is not in the accounts cache", message.Token)
+		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", message.Token)}
 	}
+	log.Debugf("Found project with ID %s for integration token %s", projectId, message.Token)
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()

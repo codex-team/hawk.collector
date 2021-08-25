@@ -4,15 +4,21 @@ import (
 	"context"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/codex-team/hawk.collector/pkg/periodic"
 	log "github.com/sirupsen/logrus"
 )
 
-const collectionWithTokens = "projects"
-const tokenFieldName = "token"
+const projectsCollectionName = "projects"
 const contextTimeout = 5 * time.Second
+
+type accountProject struct {
+	ProjectID primitive.ObjectID `bson:"_id"`
+	Token     string             `bson:"token"`
+}
 
 func (client *AccountsMongoDBClient) Run(TokenUpdatePeriod time.Duration) {
 	done := make(chan struct{})
@@ -24,19 +30,26 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 	log.Debugf("Run UpdateCache for MongoDB tokens")
 
 	ctx, _ := context.WithTimeout(context.Background(), contextTimeout)
-	collection := client.mdb.Database(client.database).Collection(collectionWithTokens)
-	tokens, err := collection.Distinct(ctx, tokenFieldName, bson.D{})
+	collection := client.mdb.Database(client.database).Collection(projectsCollectionName)
+	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
-		log.Errorf("Cannot update cache: %s", err)
+		log.Errorf("Cannot create cursor in %s collection for cache update: %s", projectsCollectionName, err)
 		return err
 	}
 
-	client.validTokens = make([]string, len(tokens))
-	for _, token := range tokens {
-		client.validTokens = append(client.validTokens, token.(string))
+	var projects []accountProject
+	if err = cursor.All(ctx, &projects); err != nil {
+		log.Errorf("Cannot decode data in %s collection for cache update: %s", projectsCollectionName, err)
+		return err
 	}
 
-	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.validTokens))
+	client.ValidTokens = make(map[string]string)
+	for _, project := range projects {
+		client.ValidTokens[project.Token] = project.ProjectID.Hex()
+	}
+
+	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.ValidTokens))
+	log.Tracef("Current token cache state: %s", client.ValidTokens)
 
 	return nil
 }

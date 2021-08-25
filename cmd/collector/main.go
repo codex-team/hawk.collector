@@ -90,7 +90,7 @@ func (x *RunCommand) Execute(args []string) error {
 	go accountsClient.Run(cfg.TokenUpdatePeriod)
 
 	// start HTTP and websocket server
-	serverObj := server.New(cfg, brokerObj, redisClient, cfg.BlacklistThreshold, cfg.NotifyURL)
+	serverObj := server.New(cfg, brokerObj, redisClient, accountsClient, cfg.BlacklistThreshold, cfg.NotifyURL)
 
 	done := make(chan struct{})
 	go periodic.RunPeriodically(redisClient.LoadBlockedIDs, cfg.BlockedIDsLoad, done)
