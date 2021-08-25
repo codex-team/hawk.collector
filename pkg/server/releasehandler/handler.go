@@ -3,14 +3,14 @@ package releasehandler
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
+
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/redis"
-	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
@@ -21,6 +21,7 @@ type Handler struct {
 	MaxReleaseCatcherMessageSize int
 	JwtSecret                    string
 	RedisClient                  *redis.RedisClient
+	AccountsMongoDBClient        *accounts.AccountsMongoDBClient
 }
 
 const AddReleaseType string = "add-release"
@@ -32,11 +33,12 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 	_, commits := getSingleFormValue(form, "commits")
 
-	// Validate JWT token
-	projectId, err := handler.DecodeJWT(token)
-	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[token]
+	if !ok {
+		log.Debugf("Token %s is not in the accounts cache", token)
+		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", token)}
 	}
+	log.Debugf("Found project with ID %s for integration token %s", projectId, token)
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
@@ -80,22 +82,4 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	// send serialized message to a broker
 	handler.Broker.Chan <- broker.Message{Payload: rawMessage, Route: handler.ReleaseExchange}
 	return ResponseMessage{200, false, "OK"}
-}
-
-// DecodeJWT – check JWT and return projectId
-func (handler *Handler) DecodeJWT(token string) (string, error) {
-	var tokenData JWTClaim
-	_, err := jwt.ParseWithClaims(token, &tokenData, func(token *jwt.Token) (interface{}, error) {
-		return []byte(handler.JwtSecret), nil
-	})
-	if err != nil {
-		return "", errors.New("invalid JWT signature")
-	}
-
-	log.Debugf("Token data: %v", tokenData)
-	if tokenData.ProjectId == "" {
-		return "", errors.New("empty projectId")
-	}
-
-	return tokenData.ProjectId, nil
 }

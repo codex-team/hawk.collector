@@ -18,6 +18,7 @@ require (
 	github.com/tidwall/gjson v1.8.0
 	github.com/tidwall/sjson v1.1.6
 	github.com/valyala/fasthttp v1.25.0
+	go.mongodb.org/mongo-driver v1.7.1
 )
 
 go 1.16

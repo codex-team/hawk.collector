@@ -20,7 +20,7 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// collect JWT token from HTTP Authorization header
+	// collect integration token from HTTP Authorization header
 	token := ctx.Request.Header.Peek("Authorization")
 	if len(token) < 8 {
 		log.Warnf("[release] Missing header (len=%d): %s", len(token), token)
