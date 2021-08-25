@@ -22,7 +22,8 @@ type accountProject struct {
 func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 	log.Debugf("Run UpdateCache for MongoDB tokens")
 
-	ctx, _ := context.WithTimeout(context.Background(), contextTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
 	collection := client.mdb.Database(client.database).Collection(projectsCollectionName)
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
