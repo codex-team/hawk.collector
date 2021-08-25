@@ -70,6 +70,7 @@ func (s *Server) Run() {
 		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
 		RedisClient:                s.RedisClient,
 		AccountsMongoDBClient:      s.AccountsMongoDBClient,
+		JwtSecret:                  s.Config.JwtSecret,
 	}
 
 	// handler of sourcemap messages via HTTP
@@ -79,6 +80,7 @@ func (s *Server) Run() {
 		MaxReleaseCatcherMessageSize: s.Config.MaxReleaseCatcherMessageSize,
 		RedisClient:                  s.RedisClient,
 		AccountsMongoDBClient:        s.AccountsMongoDBClient,
+		JwtSecret:                    s.Config.JwtSecret,
 	}
 
 	log.Infof("✓ collector starting on %s", s.Config.Listen)

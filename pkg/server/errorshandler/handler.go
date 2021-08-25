@@ -53,8 +53,19 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[message.Token]
 	if !ok {
 		log.Debugf("Token %s is not in the accounts cache", message.Token)
-		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", message.Token)}
+
+		// try to take projectId from JWT if allowed
+		if handler.AccountsMongoDBClient.AllowDeprecatedTokensFormat {
+			// Validate JWT token
+			projectId, err = handler.DecodeJWT(message.Token)
+			if err != nil {
+				return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+			}
+		} else {
+			return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", message.Token)}
+		}
 	}
+
 	log.Debugf("Found project with ID %s for integration token %s", projectId, message.Token)
 
 	if handler.RedisClient.IsBlocked(projectId) {

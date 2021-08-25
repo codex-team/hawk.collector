@@ -47,8 +47,9 @@ type Config struct {
 	RedisPassword string `env:"REDIS_PASSWORD"`
 
 	// MongoDB connection URI to the accounts database
-	AccountsMongoDBURI string        `env:"ACCOUNTS_MONGODB_URI"`
-	TokenUpdatePeriod  time.Duration `env:"TOKEN_UPDATE_PERIOD"`
+	AccountsMongoDBURI          string        `env:"ACCOUNTS_MONGODB_URI"`
+	TokenUpdatePeriod           time.Duration `env:"TOKEN_UPDATE_PERIOD"`
+	AllowDeprecatedTokensFormat bool          `env:"ALLOW_DEPRECATED_INTEGRATION_TOKENS_FORMAT"`
 
 	RedisDisabledProjectsSet string `env:"REDIS_DISABLED_PROJECT_SET"`
 	RedisBlacklistIPsSet     string `env:"REDIS_BLACKLIST_IP_SET"`

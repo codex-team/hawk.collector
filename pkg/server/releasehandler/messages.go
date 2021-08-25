@@ -2,6 +2,8 @@ package releasehandler
 
 import (
 	"encoding/json"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // ResponseMessage represents response message to a client
@@ -29,4 +31,10 @@ type ReleaseMessage struct {
 	ProjectId string                `json:"projectId"`
 	Type      string                `json:"type"`
 	Payload   ReleaseMessagePayload `json:"payload"`
+}
+
+// JWTClaim – data of JWT token
+type JWTClaim struct {
+	ProjectId string `json:"projectId"`
+	jwt.StandardClaims
 }

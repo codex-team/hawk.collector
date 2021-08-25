@@ -87,7 +87,7 @@ func (x *RunCommand) Execute(args []string) error {
 
 	// connect to accounts MongoDB
 	doneAccountsContext := make(chan struct{})
-	accountsClient := accounts.New(cfg.AccountsMongoDBURI)
+	accountsClient := accounts.New(cfg.AccountsMongoDBURI, cfg.AllowDeprecatedTokensFormat)
 	go periodic.RunPeriodically(accountsClient.UpdateTokenCache, cfg.TokenUpdatePeriod, doneAccountsContext)
 	defer close(doneAccountsContext)
 

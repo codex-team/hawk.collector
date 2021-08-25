@@ -17,13 +17,14 @@ import (
 const connectionTimeout = 10 * time.Second
 
 type AccountsMongoDBClient struct {
-	mdb         *mongo.Client
-	ctx         context.Context
-	database    string
-	ValidTokens map[string]string
+	mdb                         *mongo.Client
+	ctx                         context.Context
+	database                    string
+	ValidTokens                 map[string]string
+	AllowDeprecatedTokensFormat bool
 }
 
-func New(connectionURI string) *AccountsMongoDBClient {
+func New(connectionURI string, allowDeprecatedTokensFormat bool) *AccountsMongoDBClient {
 	uriPath, err := url.Parse(connectionURI)
 	if err != nil {
 		log.Fatalf("Incorrect MongoDB connection URI (%s): %s", connectionURI, err)
@@ -43,8 +44,9 @@ func New(connectionURI string) *AccountsMongoDBClient {
 	log.Debugf("✓ MongoDB accounts client initialized via %s", connectionURI)
 
 	return &AccountsMongoDBClient{
-		mdb:      client,
-		ctx:      ctx,
-		database: path.Base(uriPath.Path),
+		mdb:                         client,
+		ctx:                         ctx,
+		database:                    path.Base(uriPath.Path),
+		AllowDeprecatedTokensFormat: allowDeprecatedTokensFormat,
 	}
 }
