@@ -8,7 +8,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/codex-team/hawk.collector/pkg/periodic"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,12 +17,6 @@ const contextTimeout = 5 * time.Second
 type accountProject struct {
 	ProjectID primitive.ObjectID `bson:"_id"`
 	Token     string             `bson:"token"`
-}
-
-func (client *AccountsMongoDBClient) Run(TokenUpdatePeriod time.Duration) {
-	done := make(chan struct{})
-	go periodic.RunPeriodically(client.UpdateTokenCache, TokenUpdatePeriod, done)
-	// TODO: chan closing process
 }
 
 func (client *AccountsMongoDBClient) UpdateTokenCache() error {

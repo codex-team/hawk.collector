@@ -86,8 +86,10 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	// connect to accounts MongoDB
+	doneAccountsContext := make(chan struct{})
 	accountsClient := accounts.New(cfg.AccountsMongoDBURI)
-	go accountsClient.Run(cfg.TokenUpdatePeriod)
+	go periodic.RunPeriodically(accountsClient.UpdateTokenCache, cfg.TokenUpdatePeriod, doneAccountsContext)
+	defer close(doneAccountsContext)
 
 	// start HTTP and websocket server
 	serverObj := server.New(cfg, brokerObj, redisClient, accountsClient, cfg.BlacklistThreshold, cfg.NotifyURL)
