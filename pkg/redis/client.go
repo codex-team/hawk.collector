@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -11,8 +10,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 )
-
-var ErrWrongKey = errors.New("key doesn't exist")
 
 type RedisClient struct {
 	mx                   sync.Mutex
@@ -167,4 +164,13 @@ func (r *RedisClient) CheckBlacklist(ip string) bool {
 		}
 	}
 	return false
+}
+
+// CheckAvailability checks if redis is available
+func (r *RedisClient) CheckAvailability() bool {
+	pong, err := r.rdb.Ping(r.ctx).Result()
+	if err != nil {
+		return false
+	}
+	return pong == "PONG"
 }
