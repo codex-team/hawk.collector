@@ -15,6 +15,7 @@ import (
 )
 
 const connectionTimeout = 10 * time.Second
+const pingTimeout = 2 * time.Second
 
 type AccountsMongoDBClient struct {
 	mdb         *mongo.Client
@@ -49,4 +50,12 @@ func New(connectionURI string) *AccountsMongoDBClient {
 		ctx:      ctx,
 		database: path.Base(uriPath.Path),
 	}
+}
+
+// CheckAvailability checks if mongodb is available
+func (m *AccountsMongoDBClient) CheckAvailability() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	defer cancel()
+	err := m.mdb.Ping(ctx, readpref.Primary())
+	return err == nil
 }
