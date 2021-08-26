@@ -129,6 +129,8 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	switch string(ctx.Path()) {
 	case "/":
 		s.ErrorsHandler.HandleHTTP(ctx)
+	case "/health":
+		s.HandleHealth(ctx)
 	case "/ws":
 		s.ErrorsHandler.HandleWebsocket(ctx)
 	case "/release":
@@ -136,7 +138,6 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
-
 }
 
 func (s *Server) UpdateBlacklist() error {
