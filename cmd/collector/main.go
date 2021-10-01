@@ -49,7 +49,7 @@ func (x *RunCommand) Execute(args []string) error {
 	log.SetLevel(level)
 	log.Infof("✓ Log level set on %s", level)
 
-	// Initialize Hawk Cather
+	// Initialize Hawk Catcher
 	if cfg.HawkEnabled {
 		err = hawk.Init()
 		if err != nil {
@@ -62,11 +62,13 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	// connect to AMQP broker with retries
+	log.Infof("Connecting to RabbitMQ %s", cfg.BrokerURL)
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
 	log.Infof("✓ Broker initialized on %s", cfg.BrokerURL)
 
 	// connect to Redis
+	log.Infof("Connecting to Redis %s", cfg.RedisURL)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
