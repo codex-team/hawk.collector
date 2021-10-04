@@ -70,6 +70,7 @@ func (s *Server) Run() {
 		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collection_errors_processed_ops_total"}),
 		RedisClient:                s.RedisClient,
 		AccountsMongoDBClient:      s.AccountsMongoDBClient,
+		NonDefaultQueues:           errorshandler.GetQueueCache(s.Config.NonDefaultQueues),
 	}
 
 	// handler of sourcemap messages via HTTP

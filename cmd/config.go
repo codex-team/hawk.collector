@@ -56,6 +56,7 @@ type Config struct {
 
 	BlacklistUpdatePeriod time.Duration `env:"BLACKLIST_UPDATE_PERIOD"`
 	BlacklistThreshold    int           `env:"BLACKLIST_THRESHOLD"`
+	NonDefaultQueues      []string      `env:"NON_DEFAULT_QUEUES" envSeparator:","`
 
 	NotifyURL string `env:"NOTIFY_URL"`
 }
