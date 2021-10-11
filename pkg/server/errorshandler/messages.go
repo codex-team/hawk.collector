@@ -20,6 +20,7 @@ type ResponseMessage struct {
 
 // BrokerMessage represents message to a queue
 type BrokerMessage struct {
-	ProjectId string          `json:"projectId"`
-	Payload   json.RawMessage `json:"payload"`
+	ProjectId   string          `json:"projectId"`
+	Payload     json.RawMessage `json:"payload"`
+	CatcherType string          `json:"catcherType"`
 }
