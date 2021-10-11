@@ -15,6 +15,8 @@ import (
 	"github.com/tidwall/sjson"
 )
 
+const DefaultQueueName = "errors/default"
+
 // Handler of error messages
 type Handler struct {
 	Broker    *broker.Broker
@@ -28,6 +30,8 @@ type Handler struct {
 
 	RedisClient           *redis.RedisClient
 	AccountsMongoDBClient *accounts.AccountsMongoDBClient
+
+	NonDefaultQueues map[string]bool
 }
 
 func (handler *Handler) process(body []byte) ResponseMessage {
@@ -72,7 +76,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage)}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage), CatcherType: message.CatcherType}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
@@ -80,7 +84,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	// send serialized message to a broker
-	brokerMessage := broker.Message{Payload: rawMessage, Route: message.CatcherType}
+	brokerMessage := broker.Message{Payload: rawMessage, Route: handler.determineQueue(message.CatcherType)}
 	log.Debugf("Send to queue: %s", brokerMessage)
 	handler.Broker.Chan <- brokerMessage
 
@@ -88,4 +92,21 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	handler.ErrorsProcessed.Inc()
 
 	return ResponseMessage{200, false, "OK"}
+}
+
+// determineQueue - determine RabbitMQ route from catcherType
+func (handler *Handler) determineQueue(catcherType string) string {
+	if _, ok := handler.NonDefaultQueues[catcherType]; ok {
+		return catcherType
+	}
+	return DefaultQueueName
+}
+
+// GetQueueCache - construct searching set from array of queue names
+func GetQueueCache(nonDefaultQueues []string) map[string]bool {
+	cache := make(map[string]bool)
+	for _, queue := range nonDefaultQueues {
+		cache[fmt.Sprintf("errors/%s", queue)] = true
+	}
+	return cache
 }
