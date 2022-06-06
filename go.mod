@@ -14,7 +14,7 @@ require (
 	github.com/savsgio/gotils v0.0.0-20210520110740-c57c45b83e0a // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/streadway/amqp v1.0.0
-	github.com/tidwall/gjson v1.8.0
+	github.com/tidwall/gjson v1.9.3
 	github.com/tidwall/sjson v1.1.6
 	github.com/valyala/fasthttp v1.25.0
 	go.mongodb.org/mongo-driver v1.7.1
