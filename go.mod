@@ -9,8 +9,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/joho/godotenv v1.3.0
-	github.com/prometheus/client_golang v1.10.0
-	github.com/prometheus/common v0.25.0 // indirect
+	github.com/prometheus/client_golang v1.11.1
 	github.com/savsgio/gotils v0.0.0-20210520110740-c57c45b83e0a // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/streadway/amqp v1.0.0
