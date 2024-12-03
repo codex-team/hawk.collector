@@ -90,6 +90,12 @@ func (x *RunCommand) Execute(args []string) error {
 	// connect to accounts MongoDB
 	doneAccountsContext := make(chan struct{})
 	accountsClient := accounts.New(cfg.AccountsMongoDBURI)
+
+	err = accountsClient.UpdateTokenCache()
+	if err != nil {
+		log.Errorf("failed to update token cache: %s", err)
+	}
+
 	go periodic.RunPeriodically(accountsClient.UpdateTokenCache, cfg.TokenUpdatePeriod, doneAccountsContext)
 	defer close(doneAccountsContext)
 
