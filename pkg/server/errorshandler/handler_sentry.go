@@ -1,6 +1,7 @@
 package errorshandler
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
@@ -38,13 +39,13 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 
 	body := ctx.PostBody()
 
-	jsonBody, err := decompressGzipString(body)
+	sentryEnvelopeBody, err := decompressGzipString(body)
 	if err != nil {
 		log.Warnf("Failed to decompress gzip body: %s", err)
 		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Failed to decompress gzip body"})
 		return
 	}
-	log.Debugf("Decompressed body: %s", jsonBody)
+	log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
 
 	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[hawkToken]
 	if !ok {
@@ -60,8 +61,23 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	// convert message to JSON format
+	rawMessage := RawSentryMessage{Envelope: sentryEnvelopeBody}
+	jsonMessage, err := json.Marshal(rawMessage)
+	if err != nil {
+		log.Errorf("Message marshalling error: %v", err)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
+	}
+
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: json.RawMessage(jsonMessage), CatcherType: CatcherType}
+	payloadToSend, err := json.Marshal(messageToSend)
+	if err != nil {
+		log.Errorf("Message marshalling error: %v", err)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
+	}
+
 	// send serialized message to a broker
-	brokerMessage := broker.Message{Payload: jsonBody, Route: SentryQueueName}
+	brokerMessage := broker.Message{Payload: payloadToSend, Route: SentryQueueName}
 	log.Debugf("Send to queue: %s", brokerMessage)
 	handler.Broker.Chan <- brokerMessage
 
