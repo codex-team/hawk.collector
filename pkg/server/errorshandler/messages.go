@@ -24,3 +24,7 @@ type BrokerMessage struct {
 	Payload     json.RawMessage `json:"payload"`
 	CatcherType string          `json:"catcherType"`
 }
+
+type RawSentryMessage struct {
+	Envelope []byte `json:"envelope"`
+}
