@@ -20,17 +20,23 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// check that X-Sentry-Auth header is available
-	auth := ctx.Request.Header.Peek("X-Sentry-Auth")
+	var auth []byte
+	// parse incoming get request params
+	auth = ctx.QueryArgs().Peek("sentry_key")
 	if auth == nil {
-		log.Warnf("Incoming request without X-Sentry-Auth header")
-		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "X-Sentry-Auth header is missing"})
-		return
+		log.Warnf("Incoming request with deprecated sentry_key parameter")
+		// check that X-Sentry-Auth header is available
+		auth = ctx.Request.Header.Peek("X-Sentry-Auth")
+		if auth == nil {
+			log.Warnf("Incoming request without X-Sentry-Auth header")
+			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "X-Sentry-Auth header is missing"})
+			return
+		}
 	}
 
 	hawkToken, err := getSentryKeyFromAuth(string(auth))
 	if err != nil {
-		log.Warnf("Incoming request with invalid X-Sentry-Auth header: %s", err)
+		log.Warnf("Incoming request with invalid X-Sentry-Auth header=%s: %s", auth, err)
 		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: err.Error()})
 		return
 	}
