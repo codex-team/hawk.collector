@@ -9,7 +9,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const SentryQueueName = "errors/sentry"
+const SentryQueueName = "external/sentry"
 const CatcherType = "sentry"
 
 // HandleHTTP processes HTTP requests with JSON body

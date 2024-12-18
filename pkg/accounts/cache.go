@@ -2,6 +2,9 @@ package accounts
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,6 +16,11 @@ import (
 
 const projectsCollectionName = "projects"
 const contextTimeout = 5 * time.Second
+
+type acountToken struct {
+	IntegrationId string `json:"integrationId"`
+	Secret        string `json:"secret"`
+}
 
 type accountProject struct {
 	ProjectID primitive.ObjectID `bson:"_id"`
@@ -39,11 +47,33 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 
 	client.ValidTokens = make(map[string]string)
 	for _, project := range projects {
-		client.ValidTokens[project.Token] = project.ProjectID.Hex()
+		integrationSecret, err := DecodeToken(project.Token)
+		if err == nil {
+			client.ValidTokens[integrationSecret] = project.ProjectID.Hex()
+		} else {
+			log.Errorf("Integration token %s is invalid: %s", project.Token, err)
+		}
 	}
 
 	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.ValidTokens))
 	log.Tracef("Current token cache state: %s", client.ValidTokens)
 
 	return nil
+}
+
+// decodeToken decodes token from base64 to integrationId + secret
+func DecodeToken(token string) (string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return "", err
+	}
+	var data acountToken
+	err = json.Unmarshal(decoded, &data)
+	if err != nil {
+		return "", err
+	}
+
+	integrationId := strings.ReplaceAll(data.IntegrationId, "-", "")
+	secret := strings.ReplaceAll(data.Secret, "-", "")
+	return integrationId + secret, nil
 }

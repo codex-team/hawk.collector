@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/codex-team/hawk.collector/pkg/accounts"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -39,8 +40,15 @@ func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 	log.Debugf("[release] Multipart form with token: %s", token)
 
+	integrationSecret, err := accounts.DecodeToken(string(token))
+	if err != nil {
+		log.Warnf("[release] Token decoding error: %s", err)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Token decoding error"})
+		return
+	}
+
 	// process raw body via unified sourcemap handler
-	response := handler.process(form, string(token))
+	response := handler.process(form, integrationSecret)
 	log.Debugf("[release] Multipart form response: %s", response.Message)
 
 	sendAnswerHTTP(ctx, response)
