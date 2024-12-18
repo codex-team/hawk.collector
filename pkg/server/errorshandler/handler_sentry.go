@@ -10,7 +10,7 @@ import (
 )
 
 const SentryQueueName = "external/sentry"
-const CatcherType = "sentry"
+const CatcherType = "external/sentry"
 
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
