@@ -52,12 +52,18 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "CatcherType is empty"}
 	}
 
-	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[message.Token]
-	if !ok {
-		log.Debugf("Token %s is not in the accounts cache", message.Token)
-		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", message.Token)}
+	integrationSecret, err := accounts.DecodeToken(string(message.Token))
+	if err != nil {
+		log.Warnf("[release] Token decoding error: %s", err)
+		return ResponseMessage{400, true, "Token decoding error"}
 	}
-	log.Debugf("Found project with ID %s for integration token %s", projectId, message.Token)
+
+	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[integrationSecret]
+	if !ok {
+		log.Debugf("Token %s is not in the accounts cache", integrationSecret)
+		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", integrationSecret)}
+	}
+	log.Debugf("Found project with ID %s for integration token %s", projectId, integrationSecret)
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
