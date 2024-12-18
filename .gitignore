@@ -14,5 +14,5 @@
 .idea
 venv
 .DS_Store
-hawk.collector
+bin/hawk.collector
 .env
