@@ -20,32 +20,46 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// check that X-Sentry-Auth header is available
-	auth := ctx.Request.Header.Peek("X-Sentry-Auth")
-	if auth == nil {
-		log.Warnf("Incoming request without X-Sentry-Auth header")
-		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "X-Sentry-Auth header is missing"})
-		return
-	}
+	var hawkToken string
+	var err error
 
-	hawkToken, err := getSentryKeyFromAuth(string(auth))
-	if err != nil {
-		log.Warnf("Incoming request with invalid X-Sentry-Auth header: %s", err)
-		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: err.Error()})
-		return
+	// parse incoming get request params
+	sentryKey := ctx.QueryArgs().Peek("sentry_key")
+	if sentryKey == nil {
+		log.Warnf("Incoming request with deprecated sentry_key parameter")
+
+		// check that X-Sentry-Auth header is available
+		auth := ctx.Request.Header.Peek("X-Sentry-Auth")
+		if auth == nil {
+			log.Warnf("Incoming request without X-Sentry-Auth header")
+			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "X-Sentry-Auth header is missing"})
+			return
+		}
+
+		hawkToken, err = getSentryKeyFromAuth(string(auth))
+		if err != nil {
+			log.Warnf("Incoming request with invalid X-Sentry-Auth header=%s: %s", auth, err)
+			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: err.Error()})
+			return
+		}
+	} else {
+		hawkToken = string(sentryKey)
 	}
 
 	log.Debugf("Incoming request with hawk integration token: %s", hawkToken)
 
-	body := ctx.PostBody()
+	sentryEnvelopeBody := ctx.PostBody()
 
-	sentryEnvelopeBody, err := decompressGzipString(body)
-	if err != nil {
-		log.Warnf("Failed to decompress gzip body: %s", err)
-		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Failed to decompress gzip body"})
-		return
+	// todo: add check of gzip header
+	if sentryKey == nil {
+		sentryEnvelopeBody, err = decompressGzipString(sentryEnvelopeBody)
+		if err != nil {
+			log.Warnf("Failed to decompress gzip body: %s", err)
+			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Failed to decompress gzip body"})
+			return
+		}
+		log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
 	}
-	log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
 
 	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[hawkToken]
 	if !ok {

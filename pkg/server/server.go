@@ -137,12 +137,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	case "/release":
 		s.ReleaseHandler.HandleHTTP(ctx)
 	case "/api/0/envelope/":
-		auth := ctx.Request.Header.Peek("X-Sentry-Auth")
-		if auth != nil {
-			s.ErrorsHandler.HandleSentry(ctx)
-		} else {
-			ctx.Error("X-Sentry-Auth not found", fasthttp.StatusBadRequest)
-		}
+		s.ErrorsHandler.HandleSentry(ctx)
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
