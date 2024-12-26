@@ -26,8 +26,6 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	// parse incoming get request params
 	sentryKey := ctx.QueryArgs().Peek("sentry_key")
 	if sentryKey == nil {
-		log.Warnf("Incoming request with deprecated sentry_key parameter")
-
 		// check that X-Sentry-Auth header is available
 		auth := ctx.Request.Header.Peek("X-Sentry-Auth")
 		if auth == nil {
@@ -50,8 +48,8 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 
 	sentryEnvelopeBody := ctx.PostBody()
 
-	// todo: add check of gzip header
-	if sentryKey == nil {
+	contentEncoding := string(ctx.Request.Header.Peek("Content-Encoding"))
+	if contentEncoding == "gzip" {
 		sentryEnvelopeBody, err = decompressGzipString(sentryEnvelopeBody)
 		if err != nil {
 			log.Warnf("Failed to decompress gzip body: %s", err)
@@ -59,6 +57,8 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 			return
 		}
 		log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
+	} else {
+		log.Debugf("Body: %s", sentryEnvelopeBody)
 	}
 
 	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[hawkToken]
