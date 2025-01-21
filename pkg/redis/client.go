@@ -185,6 +185,11 @@ func (r *RedisClient) CheckAvailability() bool {
 
 // UpdateRateLimit checks and updates the rate limit for a project
 func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
+	// If eventsLimit is 0, we don't need to update the rate limit
+	if eventsLimit == 0 {
+		return true, nil
+	}
+
 	// Key format: "project_id" -> "timestamp:count"
 	now := time.Now().Unix()
 
