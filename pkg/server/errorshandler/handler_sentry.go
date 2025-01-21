@@ -26,8 +26,6 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	// parse incoming get request params
 	sentryKey := ctx.QueryArgs().Peek("sentry_key")
 	if sentryKey == nil {
-		log.Warnf("Incoming request with deprecated sentry_key parameter")
-
 		// check that X-Sentry-Auth header is available
 		auth := ctx.Request.Header.Peek("X-Sentry-Auth")
 		if auth == nil {
@@ -50,8 +48,8 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 
 	sentryEnvelopeBody := ctx.PostBody()
 
-	// todo: add check of gzip header
-	if sentryKey == nil {
+	contentEncoding := string(ctx.Request.Header.Peek("Content-Encoding"))
+	if contentEncoding == "gzip" {
 		sentryEnvelopeBody, err = decompressGzipString(sentryEnvelopeBody)
 		if err != nil {
 			log.Warnf("Failed to decompress gzip body: %s", err)
@@ -59,6 +57,8 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 			return
 		}
 		log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
+	} else {
+		log.Debugf("Body: %s", sentryEnvelopeBody)
 	}
 
 	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[hawkToken]
@@ -69,9 +69,28 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, hawkToken)
 
+	projectLimits, ok := handler.AccountsMongoDBClient.ProjectLimits[projectId]
+	if !ok {
+		log.Warnf("Project %s is not in the projects limits cache", projectId)
+	} else {
+		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+	}
+
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Project has exceeded the events limit"})
+		return
+	}
+
+	ok, err = handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	if err != nil {
+		log.Errorf("Failed to update rate limit: %s", err)
+		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Failed to update rate limit"})
+		return
+	}
+
+	if !ok {
+		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Rate limit exceeded"})
 		return
 	}
 

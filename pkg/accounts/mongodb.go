@@ -18,10 +18,11 @@ const connectionTimeout = 10 * time.Second
 const pingTimeout = 2 * time.Second
 
 type AccountsMongoDBClient struct {
-	mdb         *mongo.Client
-	ctx         context.Context
-	database    string
-	ValidTokens map[string]string
+	mdb           *mongo.Client
+	ctx           context.Context
+	database      string
+	ValidTokens   map[string]string
+	ProjectLimits map[string]rateLimitSettings
 }
 
 func New(connectionURI string) *AccountsMongoDBClient {

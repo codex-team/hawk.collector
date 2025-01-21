@@ -3,6 +3,8 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,6 +12,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 )
+
+type rateLimitSettings struct {
+	EventsLimit  int64 `bson:"N"`
+	EventsPeriod int64 `bson:"T"` // Period in seconds
+}
 
 type RedisClient struct {
 	mx                   sync.Mutex
@@ -21,6 +28,7 @@ type RedisClient struct {
 	ctx                  context.Context
 	blockedIDs           []string
 	blacklistIPs         []string
+	projectLimits        map[string]rateLimitSettings
 }
 
 func New(ctx context.Context, url, pass, blockedIDsSet, blacklistSet, IPsMap, currentMap string) *RedisClient {
@@ -173,4 +181,50 @@ func (r *RedisClient) CheckAvailability() bool {
 		return false
 	}
 	return pong == "PONG"
+}
+
+// UpdateRateLimit checks and updates the rate limit for a project
+func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
+	// Key format: "project_id" -> "timestamp:count"
+	now := time.Now().Unix()
+
+	// Get current window data
+	val, err := r.rdb.HGet(r.ctx, "rate_limits", projectID).Result()
+	if err != nil && err != redis.Nil {
+		return false, fmt.Errorf("failed to get rate limit data: %w", err)
+	}
+
+	var timestamp int64
+	var count int64
+
+	if val != "" {
+		// Parse existing "timestamp:count" value
+		parts := strings.Split(val, ":")
+		timestamp, _ = strconv.ParseInt(parts[0], 10, 64)
+		count, _ = strconv.ParseInt(parts[1], 10, 64)
+
+		// Reset count if we're in a new window
+		if now-timestamp >= eventsPeriod {
+			count = 0
+			timestamp = now
+		}
+	} else {
+		// Initialize new window
+		timestamp = now
+		count = 0
+	}
+
+	// Check if incrementing would exceed limit
+	if count+1 > eventsLimit {
+		return false, nil
+	}
+
+	// Update the counter
+	newVal := fmt.Sprintf("%d:%d", timestamp, count+1)
+	err = r.rdb.HSet(r.ctx, "rate_limits", projectID, newVal).Err()
+	if err != nil {
+		return false, fmt.Errorf("failed to update rate limit: %w", err)
+	}
+
+	return true, nil
 }
