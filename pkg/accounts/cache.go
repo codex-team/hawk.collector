@@ -92,15 +92,15 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 	workspacesCollection := client.mdb.Database(client.database).Collection(workspacesCollectionName)
 	pipeline := mongo.Pipeline{
 		{
-			{"$lookup", bson.D{
-				{"from", plansCollectionName},
-				{"localField", "tariffPlanId"},
-				{"foreignField", "_id"},
-				{"as", "plan"},
+			{Key: "$lookup", Value: bson.D{
+				{Key: "from", Value: plansCollectionName},
+				{Key: "localField", Value: "tariffPlanId"},
+				{Key: "foreignField", Value: "_id"},
+				{Key: "as", Value: "plan"},
 			}},
 		},
 		{
-			{"$unwind", "$plan"},
+			{Key: "$unwind", Value: "$plan"},
 		},
 	}
 

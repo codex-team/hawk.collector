@@ -13,11 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type rateLimitSettings struct {
-	EventsLimit  int64 `bson:"N"`
-	EventsPeriod int64 `bson:"T"` // Period in seconds
-}
-
 type RedisClient struct {
 	mx                   sync.Mutex
 	rdb                  *redis.Client
@@ -28,7 +23,6 @@ type RedisClient struct {
 	ctx                  context.Context
 	blockedIDs           []string
 	blacklistIPs         []string
-	projectLimits        map[string]rateLimitSettings
 }
 
 func New(ctx context.Context, url, pass, blockedIDsSet, blacklistSet, IPsMap, currentMap string) *RedisClient {
