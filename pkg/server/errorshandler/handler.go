@@ -65,9 +65,25 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, integrationSecret)
 
+	projectLimits, ok := handler.AccountsMongoDBClient.ProjectLimits[projectId]
+	if !ok {
+		log.Warnf("Project %s is not in the projects limits cache", projectId)
+	} else {
+		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+	}
+
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
+	}
+
+	ok, err = handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	if err != nil {
+		log.Errorf("Failed to update rate limit: %s", err)
+		return ResponseMessage{402, true, "Failed to update rate limit"}
+	}
+	if !ok {
+		return ResponseMessage{402, true, "Rate limit exceeded"}
 	}
 
 	// Validate if message is a valid JSON
