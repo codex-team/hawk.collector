@@ -3,8 +3,6 @@ package redis
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -177,54 +175,64 @@ func (r *RedisClient) CheckAvailability() bool {
 	return pong == "PONG"
 }
 
-// UpdateRateLimit checks and updates the rate limit for a project
-// Returns true if rate is within limit, false otherwise
+// UpdateRateLimit checks and updates the rate limit for a project using a Lua script
 func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
 	// If eventsLimit is 0, we don't need to update the rate limit
 	if eventsLimit == 0 {
 		return true, nil
 	}
 
-	// Key format: "project_id" -> "timestamp:count"
-	now := time.Now().Unix()
+	// Lua script for atomic rate limit check and update
+	script := `
+		local key = KEYS[1]
+		local field = ARGV[1]
+		local now = tonumber(ARGV[2])
+		local limit = tonumber(ARGV[3])
+		local period = tonumber(ARGV[4])
 
-	// Get current window data
-	val, err := r.rdb.HGet(r.ctx, "rate_limits", projectID).Result()
-	if err != nil && err != redis.Nil {
-		return false, fmt.Errorf("failed to get rate limit data: %w", err)
-	}
+		local current = redis.call('HGET', key, field)
+		if not current then
+			-- No existing record, create new window
+			redis.call('HSET', key, field, now .. ':1')
+			return 1
+		end
 
-	var timestamp int64
-	var count int64
+		local timestamp, count = string.match(current, '(%d+):(%d+)')
+		timestamp = tonumber(timestamp)
+		count = tonumber(count)
 
-	if val != "" {
-		// Parse existing "timestamp:count" value
-		parts := strings.Split(val, ":")
-		timestamp, _ = strconv.ParseInt(parts[0], 10, 64)
-		count, _ = strconv.ParseInt(parts[1], 10, 64)
+		-- Check if we're in a new time window
+		if now - timestamp >= period then
+			-- Reset for new window
+			redis.call('HSET', key, field, now .. ':1')
+			return 1
+		end
 
-		// Reset count if we're in a new window
-		if now-timestamp >= eventsPeriod {
-			count = 0
-			timestamp = now
-		}
-	} else {
-		// Initialize new window
-		timestamp = now
-		count = 0
-	}
+		-- Check if incrementing would exceed limit
+		if count + 1 > limit then
+			return 0
+		end
 
-	// Check if incrementing would exceed limit
-	if count+1 > eventsLimit {
-		return false, nil
-	}
+		-- Increment counter
+		redis.call('HSET', key, field, timestamp .. ':' .. (count + 1))
+		return 1
+	`
 
-	// Update the counter
-	newVal := fmt.Sprintf("%d:%d", timestamp, count+1)
-	err = r.rdb.HSet(r.ctx, "rate_limits", projectID, newVal).Err()
+	// Run the script
+	result, err := r.rdb.Eval(
+		r.ctx,
+		script,
+		[]string{"rate_limits"}, // KEYS
+		projectID,               // field (ARGV[1])
+		time.Now().Unix(),       // now (ARGV[2])
+		eventsLimit,             // limit (ARGV[3])
+		eventsPeriod,            // period (ARGV[4])
+	).Result()
+
 	if err != nil {
-		return false, fmt.Errorf("failed to update rate limit: %w", err)
+		return false, fmt.Errorf("failed to execute rate limit script: %w", err)
 	}
 
-	return true, nil
+	// Script returns 1 if rate limit is not exceeded, 0 if it is
+	return result.(int64) == 1, nil
 }
