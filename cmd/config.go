@@ -44,13 +44,13 @@ type Config struct {
 	RedisPassword string `env:"REDIS_PASSWORD"`
 
 	// MongoDB connection URI to the accounts database
-	AccountsMongoDBURI string        `env:"ACCOUNTS_MONGODB_URI"`
-	TokenUpdatePeriod  time.Duration `env:"TOKEN_UPDATE_PERIOD"`
-
-	RedisDisabledProjectsSet string `env:"REDIS_DISABLED_PROJECT_SET"`
-	RedisBlacklistIPsSet     string `env:"REDIS_BLACKLIST_IP_SET"`
-	RedisAllIPsMap           string `env:"REDIS_ALL_IPS_MAP"`
-	RedisCurrentPeriodMap    string `env:"REDIS_CURRENT_PERIOD_MAP"`
+	AccountsMongoDBURI         string        `env:"ACCOUNTS_MONGODB_URI"`
+	TokenUpdatePeriod          time.Duration `env:"TOKEN_UPDATE_PERIOD" defaultEnv:"1m"`
+	ProjectsLimitsUpdatePeriod time.Duration `env:"PROJECTS_LIMITS_UPDATE_PERIOD" defaultEnv:"1m"`
+	RedisDisabledProjectsSet   string        `env:"REDIS_DISABLED_PROJECT_SET"`
+	RedisBlacklistIPsSet       string        `env:"REDIS_BLACKLIST_IP_SET"`
+	RedisAllIPsMap             string        `env:"REDIS_ALL_IPS_MAP"`
+	RedisCurrentPeriodMap      string        `env:"REDIS_CURRENT_PERIOD_MAP"`
 
 	BlockedIDsLoad time.Duration `env:"BLOCKED_PROJECTS_UPDATE_PERIOD"`
 
