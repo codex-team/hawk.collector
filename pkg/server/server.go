@@ -94,7 +94,13 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 
 	var err error
 	remoteIP := string(ctx.Request.Header.Peek(http.CanonicalHeaderKey("X-Forwarded-For")))
-	if len(remoteIP) > 0 {
+
+	// If X-Forwarded-For is empty, fallback to ctx.RemoteIP()
+	if remoteIP == "" {
+		remoteIP = ctx.RemoteIP().String()
+	}
+
+	if remoteIP != "" {
 		isBlocked := s.RedisClient.CheckBlacklist(remoteIP)
 		if isBlocked {
 			ctx.Error("Too Many Requests", fasthttp.StatusTooManyRequests)
@@ -106,7 +112,7 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 			log.Errorf("failed to increment IP in database: %s", err.Error())
 		}
 	} else {
-		log.Errorf("failed to get remote IP")
+		log.Errorf("failed to determine remote IP")
 	}
 
 	defer func() {
