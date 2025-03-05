@@ -96,13 +96,7 @@ func (x *RunCommand) Execute(args []string) error {
 		log.Errorf("failed to update token cache: %s", err)
 	}
 
-	err = accountsClient.UpdateProjectsLimitsCache()
-	if err != nil {
-		log.Errorf("failed to update projects limits cache: %s", err)
-	}
-
 	go periodic.RunPeriodically(accountsClient.UpdateTokenCache, cfg.TokenUpdatePeriod, doneAccountsContext)
-	go periodic.RunPeriodically(accountsClient.UpdateProjectsLimitsCache, cfg.ProjectsLimitsUpdatePeriod, doneAccountsContext)
 	defer close(doneAccountsContext)
 
 	// start HTTP and websocket server

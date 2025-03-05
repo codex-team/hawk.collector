@@ -15,5 +15,4 @@
 venv
 .DS_Store
 bin/hawk.collector
-bin/golangci-lint
 .env
