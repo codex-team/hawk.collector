@@ -8,6 +8,7 @@ require (
 	github.com/fasthttp/websocket v1.4.3
 	github.com/go-redis/redis/v8 v8.8.3
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.3 // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/joho/godotenv v1.3.0
 	github.com/prometheus/client_golang v1.10.0
@@ -18,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.8.0
 	github.com/tidwall/sjson v1.1.6
-	github.com/valyala/fasthttp v1.25.0
+	github.com/valyala/fasthttp v1.34.0
 	go.mongodb.org/mongo-driver v1.7.1
 )
 
