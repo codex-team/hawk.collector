@@ -26,7 +26,6 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Errorf("Websocket error in ReadMessage: %v", err)
 				break
 			}
 
