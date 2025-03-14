@@ -6,17 +6,23 @@ DOCKER_IMAGE=hawk.collector
 
 export GO111MODULE=on
 
-all: check lint build
+GOLANGCI_LINT_VERSION=v1.63.4
+GOLANGCI_LINT=bin/golangci-lint
+
+$(GOLANGCI_LINT):
+	@echo "Installing golangci-lint..."
+	@mkdir -p bin
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin $(GOLANGCI_LINT_VERSION)
+
+all: lint build
 
 build:
 	go build -o $(BINARY_NAME) -v ./
 	chmod +x $(BINARY_NAME)
-check:
-	gometalinter --vendor --fast --enable-gc --tests --aggregate --disable=gotype --disable=gosec ./
 test:
 	go test ./...
-lint:
-	golint cmd/... lib/... ./
+lint: $(GOLANGCI_LINT)
+	./$(GOLANGCI_LINT) run ./...
 clean:
 	go clean
 	rm -rf $(BINARY_NAME)
