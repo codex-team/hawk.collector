@@ -10,6 +10,9 @@ type Config struct {
 	// Exchange name for error messages
 	Exchange string `env:"EXCHANGE"`
 
+	// Exchange name for performance messages
+	PerformanceExchange string `env:"PERFORMANCE_EXCHANGE"`
+
 	// Exchange name for release messages
 	ReleaseExchange string `env:"RELEASE_EXCHANGE"`
 
@@ -27,6 +30,9 @@ type Config struct {
 
 	// Maximum POST body size in bytes for release messages
 	MaxReleaseCatcherMessageSize int `env:"MAX_RELEASE_CATCHER_MESSAGE_SIZE"`
+
+	// Maximum POST body size in bytes for performance messages
+	MaxPerformanceCatcherMessageSize int `env:"MAX_PERFORMANCE_CATCHER_MESSAGE_SIZE"`
 
 	// Listen HOST:PORT
 	Listen string `env:"LISTEN"`
