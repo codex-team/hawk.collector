@@ -1,4 +1,4 @@
-package errorshandler
+package performancehandler
 
 import (
 	"encoding/json"
@@ -11,8 +11,8 @@ import (
 
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
-	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
-		log.Warnf("Incoming request with size %d", ctx.Request.Header.ContentLength())
+	if ctx.Request.Header.ContentLength() > handler.MaxPerformanceCatcherMessageSize {
+		log.Warnf("[performance] Incoming request with size %d", ctx.Request.Header.ContentLength())
 		sendAnswerHTTP(ctx, ResponseMessage{
 			Code:    400,
 			Error:   true,

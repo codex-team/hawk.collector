@@ -62,9 +62,11 @@ func (x *RunCommand) Execute(args []string) error {
 	}
 
 	// connect to AMQP broker with retries
-	log.Infof("Connecting to RabbitMQ %s", cfg.BrokerURL)
+	log.Infof("Connecting to RabbitMQ (%s) %s", cfg.Exchange, cfg.BrokerURL)
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
+	performanceBrokerObj := broker.New(cfg.BrokerURL, cfg.PerformanceExchange)
+	performanceBrokerObj.Init()
 	log.Infof("✓ Broker initialized on %s", cfg.BrokerURL)
 
 	// connect to Redis
@@ -106,7 +108,7 @@ func (x *RunCommand) Execute(args []string) error {
 	defer close(doneAccountsContext)
 
 	// start HTTP and websocket server
-	serverObj := server.New(cfg, brokerObj, redisClient, accountsClient, cfg.BlacklistThreshold, cfg.NotifyURL)
+	serverObj := server.New(cfg, brokerObj, performanceBrokerObj, redisClient, accountsClient, cfg.BlacklistThreshold, cfg.NotifyURL)
 
 	done := make(chan struct{})
 	go periodic.RunPeriodically(redisClient.LoadBlockedIDs, cfg.BlockedIDsLoad, done)

@@ -14,7 +14,9 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
+	"github.com/codex-team/hawk.collector/pkg/server/performancehandler"
 	"github.com/codex-team/hawk.collector/pkg/server/releasehandler"
+	"github.com/codex-team/hawk.collector/pkg/server/ws"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +25,8 @@ import (
 
 // Server represents fasthttp server
 type Server struct {
-	Broker *broker.Broker
+	Broker            *broker.Broker
+	PerformanceBroker *broker.Broker
 
 	// configuration from .env
 	Config cmd.Config
@@ -32,18 +35,26 @@ type Server struct {
 	ErrorsHandler errorshandler.Handler
 
 	// handler for release processing
-	ReleaseHandler        releasehandler.Handler
+	ReleaseHandler releasehandler.Handler
+
+	// handler for performance processing
+	PerformanceHandler performancehandler.Handler
+
 	RedisClient           *redis.RedisClient
 	AccountsMongoDBClient *accounts.AccountsMongoDBClient
 
 	BlacklistThreshold int
 	NotifyURL          string
+
+	// WebSocket handler
+	WSHandler *ws.Handler
 }
 
 // New creates new server and initiates it with link to the broker and copy of configuration parameters
-func New(configuration cmd.Config, brokerClient *broker.Broker, redisClient *redis.RedisClient, accountsMongoDBClient *accounts.AccountsMongoDBClient, threshold int, notifyURL string) *Server {
+func New(configuration cmd.Config, brokerClient *broker.Broker, performanceBrokerClient *broker.Broker, redisClient *redis.RedisClient, accountsMongoDBClient *accounts.AccountsMongoDBClient, threshold int, notifyURL string) *Server {
 	return &Server{
 		Broker:                brokerClient,
+		PerformanceBroker:     performanceBrokerClient,
 		Config:                configuration,
 		RedisClient:           redisClient,
 		AccountsMongoDBClient: accountsMongoDBClient,
@@ -81,6 +92,19 @@ func (s *Server) Run() {
 		RedisClient:                  s.RedisClient,
 		AccountsMongoDBClient:        s.AccountsMongoDBClient,
 	}
+
+	// handler of performance messages via HTTP
+	s.PerformanceHandler = performancehandler.Handler{
+		PerformanceBroker:                s.PerformanceBroker,
+		MaxPerformanceCatcherMessageSize: s.Config.MaxPerformanceCatcherMessageSize,
+		PerformanceBlockedByLimit:        promauto.NewCounter(prometheus.CounterOpts{Name: "collection_performance_blocked_by_limit_total"}),
+		PerformanceProcessed:             promauto.NewCounter(prometheus.CounterOpts{Name: "collection_performance_processed_ops_total"}),
+		RedisClient:                      s.RedisClient,
+		AccountsMongoDBClient:            s.AccountsMongoDBClient,
+	}
+
+	// Initialize WebSocket handler
+	s.WSHandler = ws.NewHandler(&s.ErrorsHandler, &s.PerformanceHandler)
 
 	log.Infof("✓ collector starting on %s", s.Config.Listen)
 
@@ -139,11 +163,13 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 	case "/health":
 		s.HandleHealth(ctx)
 	case "/ws":
-		s.ErrorsHandler.HandleWebsocket(ctx)
+		s.WSHandler.Handle(ctx)
 	case "/release":
 		s.ReleaseHandler.HandleHTTP(ctx)
 	case "/api/0/envelope/":
 		s.ErrorsHandler.HandleSentry(ctx)
+	case "/performance":
+		s.PerformanceHandler.HandleHTTP(ctx)
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
