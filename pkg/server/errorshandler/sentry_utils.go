@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+  log "github.com/sirupsen/logrus"
 )
 
 func decompressGzipString(gzipString []byte) ([]byte, error) {
@@ -34,6 +35,8 @@ func getSentryKeyFromAuth(auth string) (string, error) {
 			return kv[1], nil
 		}
 	}
+
+	log.Infof("Sentry key not found in auth header: %s", auth)
 
 	return "", errors.New("sentry_key not found")
 }
