@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-  "log"
 	"strings"
+  log "github.com/sirupsen/logrus"
 )
 
 func decompressGzipString(gzipString []byte) ([]byte, error) {
