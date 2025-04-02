@@ -35,7 +35,7 @@ func getSentryKeyFromAuth(auth string) (string, error) {
 		}
 	}
 
-	log.Debugf("Sentry key not found in auth header: %s", auth)
+	log.Infof("Sentry key not found in auth header: %s", auth)
 
 	return "", errors.New("sentry_key not found")
 }
