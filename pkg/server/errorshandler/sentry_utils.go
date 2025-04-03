@@ -28,12 +28,13 @@ func decompressGzipString(gzipString []byte) ([]byte, error) {
 
 func getSentryKeyFromAuth(auth string) (string, error) {
 	auth = strings.TrimPrefix(auth, "Sentry ")
-	pairs := strings.Split(auth, ", ")
+	pairs := strings.Split(auth, ",")
 	for _, pair := range pairs {
-		kv := strings.SplitN(pair, "=", 2)
-		if len(kv) == 2 && kv[0] == "sentry_key" {
-			return kv[1], nil
-		}
+	  pair = strings.TrimSpace(pair)
+	  kv := strings.SplitN(pair, "=", 2)
+	  if len(kv) == 2 && strings.TrimSpace(kv[0]) == "sentry_key" {
+		return strings.TrimSpace(kv[1]), nil
+	  }
 	}
 
 	log.Infof("Sentry key not found in auth header: %s", auth)
