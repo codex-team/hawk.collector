@@ -1,4 +1,4 @@
-package errorshandler
+package performancehandler
 
 import (
 	"encoding/json"
@@ -12,26 +12,23 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
-const DefaultQueueName = "errors/default"
+const PerformanceQueueName = "performance"
+const CatcherType = "performance"
 
-// Handler of error messages
+// Handler of performance messages
 type Handler struct {
-	Broker    *broker.Broker
-	JwtSecret string
+	PerformanceBroker *broker.Broker
 
-	// Maximum POST body size in bytes for error messages
-	MaxErrorCatcherMessageSize int
+	// Maximum POST body size in bytes for performance messages
+	MaxPerformanceCatcherMessageSize int
 
-	ErrorsBlockedByLimit prometheus.Counter
-	ErrorsProcessed      prometheus.Counter
+	PerformanceBlockedByLimit prometheus.Counter
+	PerformanceProcessed      prometheus.Counter
 
 	RedisClient           *redis.RedisClient
 	AccountsMongoDBClient *accounts.AccountsMongoDBClient
-
-	NonDefaultQueues map[string]bool
 }
 
 func (handler *Handler) Process(body []byte) ResponseMessage {
@@ -73,7 +70,7 @@ func (handler *Handler) Process(body []byte) ResponseMessage {
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
-		handler.ErrorsBlockedByLimit.Inc()
+		handler.PerformanceBlockedByLimit.Inc()
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
@@ -92,13 +89,23 @@ func (handler *Handler) Process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "Invalid payload JSON format"}
 	}
 
-	modifiedMessage, err := sjson.Set(stringMessage, "timestamp", time.Now().Unix())
+	// Parse JSON into map
+	var jsonMap map[string]interface{}
+	if err := json.Unmarshal([]byte(stringMessage), &jsonMap); err != nil {
+		return ResponseMessage{400, true, "Failed to parse payload JSON"}
+	}
+
+	// Add timestamp
+	jsonMap["timestamp"] = time.Now().Unix()
+
+	// Convert back to JSON
+	modifiedMessage, err := json.Marshal(jsonMap)
 	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
+		return ResponseMessage{400, true, fmt.Sprintf("Failed to encode modified JSON: %s", err)}
 	}
 
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage), CatcherType: message.CatcherType}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: modifiedMessage, CatcherType: CatcherType}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
@@ -106,33 +113,16 @@ func (handler *Handler) Process(body []byte) ResponseMessage {
 	}
 
 	// send serialized message to a broker
-	brokerMessage := broker.Message{Payload: rawMessage, Route: handler.determineQueue(message.CatcherType)}
+	brokerMessage := broker.Message{Payload: rawMessage, Route: PerformanceQueueName}
 	log.Debugf("Send to queue: %s", brokerMessage)
-	handler.Broker.Chan <- brokerMessage
+	handler.PerformanceBroker.Chan <- brokerMessage
 
 	// increment processed errors counter
-	handler.ErrorsProcessed.Inc()
+	handler.PerformanceProcessed.Inc()
 
 	return ResponseMessage{200, false, "OK"}
 }
 
-// determineQueue - determine RabbitMQ route from catcherType
-func (handler *Handler) determineQueue(catcherType string) string {
-	if _, ok := handler.NonDefaultQueues[catcherType]; ok {
-		return catcherType
-	}
-	return DefaultQueueName
-}
-
-// GetQueueCache - construct searching set from array of queue names
-func GetQueueCache(nonDefaultQueues []string) map[string]bool {
-	cache := make(map[string]bool)
-	for _, queue := range nonDefaultQueues {
-		cache[fmt.Sprintf("errors/%s", queue)] = true
-	}
-	return cache
-}
-
 func (h *Handler) GetMaxMessageSize() int {
-	return h.MaxErrorCatcherMessageSize
+	return h.MaxPerformanceCatcherMessageSize
 }
