@@ -24,23 +24,23 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		// limit read size of MaxErrorCatcherMessageSize bytes
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
-		
+
 		// Set initial read deadline
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		
+
 		// Setup pong handler to reset the read deadline
 		conn.SetPongHandler(func(string) error {
 			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 			return nil
 		})
-		
+
 		// Start a ticker to send pings
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
-		
+
 		// Create a done channel to signal when to exit
 		done := make(chan struct{})
-		
+
 		// Start goroutine for ping
 		go func() {
 			for {
@@ -56,7 +56,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				}
 			}
 		}()
-		
+
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
@@ -64,7 +64,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				close(done)
 				break
 			}
-			
+
 			// Reset the read deadline on successful read
 			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 
