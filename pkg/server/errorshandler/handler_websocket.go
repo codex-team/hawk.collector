@@ -26,11 +26,17 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
 
 		// Set initial read deadline
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		if err := conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+			log.Errorf("Failed to set read deadline: %v", err)
+			return
+		}
 
 		// Setup pong handler to reset the read deadline
 		conn.SetPongHandler(func(string) error {
-			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			if err := conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+				log.Errorf("Failed to set read deadline in pong handler: %v", err)
+				return err
+			}
 			return nil
 		})
 
@@ -66,7 +72,11 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			}
 
 			// Reset the read deadline on successful read
-			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			if err := conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+				log.Errorf("Failed to reset read deadline: %v", err)
+				close(done)
+				break
+			}
 
 			log.Debugf("Websocket message: %s", message)
 
