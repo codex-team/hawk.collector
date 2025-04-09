@@ -2,6 +2,7 @@ package errorshandler
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/fasthttp/websocket"
@@ -23,12 +24,49 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		// limit read size of MaxErrorCatcherMessageSize bytes
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
+		
+		// Set initial read deadline
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		
+		// Setup pong handler to reset the read deadline
+		conn.SetPongHandler(func(string) error {
+			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			return nil
+		})
+		
+		// Start a ticker to send pings
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		
+		// Create a done channel to signal when to exit
+		done := make(chan struct{})
+		
+		// Start goroutine for ping
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+						log.Errorf("Ping error: %v", err)
+						close(done)
+						return
+					}
+				case <-done:
+					return
+				}
+			}
+		}()
+		
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				log.Errorf("Websocket error in ReadMessage: %v", err)
+				close(done)
 				break
 			}
+			
+			// Reset the read deadline on successful read
+			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 
 			log.Debugf("Websocket message: %s", message)
 
@@ -38,6 +76,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 			if err = sendAnswerWebsocket(conn, messageType, response); err != nil {
 				log.Errorf("Websocket response: %v", err)
+				close(done)
 				return
 			}
 		}
