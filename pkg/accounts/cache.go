@@ -66,15 +66,20 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 		return err
 	}
 
-	client.ValidTokens = make(map[string]string)
+	// Create a temporary map instead of directly modifying client.ValidTokens
+	validTokensTmp := make(map[string]string)
+	
 	for _, project := range projects {
 		integrationSecret, err := DecodeToken(project.Token)
 		if err == nil {
-			client.ValidTokens[integrationSecret] = project.ProjectID.Hex()
+			validTokensTmp[integrationSecret] = project.ProjectID.Hex()
 		} else {
 			log.Errorf("Integration token %s is invalid: %s", project.Token, err)
 		}
 	}
+	
+	// Atomically replace the map reference
+	client.ValidTokens = validTokensTmp
 
 	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.ValidTokens))
 	log.Tracef("Current token cache state: %s", client.ValidTokens)
