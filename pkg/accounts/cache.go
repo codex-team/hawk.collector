@@ -66,18 +66,23 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 		return err
 	}
 
-	client.ValidTokens = make(map[string]string)
+	// Create a temporary map instead of directly modifying client.validTokens
+	validTokensTmp := make(map[string]string)
+	
 	for _, project := range projects {
 		integrationSecret, err := DecodeToken(project.Token)
 		if err == nil {
-			client.ValidTokens[integrationSecret] = project.ProjectID.Hex()
+			validTokensTmp[integrationSecret] = project.ProjectID.Hex()
 		} else {
 			log.Errorf("Integration token %s is invalid: %s", project.Token, err)
 		}
 	}
+	
+	// Atomically replace the map reference
+	client.validTokens = validTokensTmp
 
-	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.ValidTokens))
-	log.Tracef("Current token cache state: %s", client.ValidTokens)
+	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.validTokens))
+	log.Tracef("Current token cache state: %s", client.validTokens)
 
 	return nil
 }
@@ -136,8 +141,8 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		workspaceMap[workspace.WorkspaceID.Hex()] = workspace
 	}
 
-	// Initialize the limits cache
-	client.ProjectLimits = make(map[string]rateLimitSettings)
+	// Create a temporary map instead of directly modifying client.projectLimits
+	projectLimitsTmp := make(map[string]rateLimitSettings)
 
 	// Process each project applying the priority rules
 	for _, project := range projects {
@@ -164,10 +169,14 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 			finalLimits.EventsPeriod = project.RateLimitSettings.EventsPeriod
 		}
 
-		client.ProjectLimits[projectID] = finalLimits
+		// Add to temporary map instead of client.projectLimits
+		projectLimitsTmp[projectID] = finalLimits
 	}
 
-	log.Tracef("Current projects limits cache state: %+v", client.ProjectLimits)
+	// Atomically replace the map reference
+	client.projectLimits = projectLimitsTmp
+
+	log.Tracef("Current projects limits cache state: %+v", client.projectLimits)
 
 	return nil
 }

@@ -58,14 +58,14 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "Token decoding error"}
 	}
 
-	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[integrationSecret]
+	projectId, ok := handler.AccountsMongoDBClient.GetValidToken(integrationSecret)
 	if !ok {
 		log.Debugf("Token %s is not in the accounts cache", integrationSecret)
 		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", integrationSecret)}
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, integrationSecret)
 
-	projectLimits, ok := handler.AccountsMongoDBClient.ProjectLimits[projectId]
+	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
 		log.Warnf("Project %s is not in the projects limits cache", projectId)
 	} else {

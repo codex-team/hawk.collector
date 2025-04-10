@@ -33,14 +33,14 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 	_, commits := getSingleFormValue(form, "commits")
 
-	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[token]
+	projectId, ok := handler.AccountsMongoDBClient.GetValidToken(token)
 	if !ok {
 		log.Debugf("Token %s is not in the accounts cache", token)
 		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", token)}
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, token)
 
-	projectLimits, ok := handler.AccountsMongoDBClient.ProjectLimits[projectId]
+	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
 		log.Warnf("Project %s is not in the projects limits cache", projectId)
 	} else {

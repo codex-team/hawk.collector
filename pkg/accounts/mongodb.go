@@ -21,8 +21,8 @@ type AccountsMongoDBClient struct {
 	mdb           *mongo.Client
 	ctx           context.Context
 	database      string
-	ValidTokens   map[string]string
-	ProjectLimits map[string]rateLimitSettings
+	validTokens   map[string]string
+	projectLimits map[string]rateLimitSettings
 }
 
 func New(connectionURI string) *AccountsMongoDBClient {
@@ -59,4 +59,16 @@ func (m *AccountsMongoDBClient) CheckAvailability() bool {
 	defer cancel()
 	err := m.mdb.Ping(ctx, readpref.Primary())
 	return err == nil
+}
+
+// GetValidToken returns the project ID for a given integration token
+func (client *AccountsMongoDBClient) GetValidToken(token string) (string, bool) {
+	projectID, ok := client.validTokens[token]
+	return projectID, ok
+}
+
+// GetProjectLimits returns the rate limit settings for a project
+func (client *AccountsMongoDBClient) GetProjectLimits(projectID string) (rateLimitSettings, bool) {
+	limits, ok := client.projectLimits[projectID]
+	return limits, ok
 }
