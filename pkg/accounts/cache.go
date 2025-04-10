@@ -136,8 +136,8 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		workspaceMap[workspace.WorkspaceID.Hex()] = workspace
 	}
 
-	// Initialize the limits cache
-	client.ProjectLimits = make(map[string]rateLimitSettings)
+	// Create a temporary map instead of directly modifying client.ProjectLimits
+	projectLimitsTmp := make(map[string]rateLimitSettings)
 
 	// Process each project applying the priority rules
 	for _, project := range projects {
@@ -164,8 +164,12 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 			finalLimits.EventsPeriod = project.RateLimitSettings.EventsPeriod
 		}
 
-		client.ProjectLimits[projectID] = finalLimits
+		// Add to temporary map instead of client.ProjectLimits
+		projectLimitsTmp[projectID] = finalLimits
 	}
+
+	// Atomically replace the map reference
+	client.ProjectLimits = projectLimitsTmp
 
 	log.Tracef("Current projects limits cache state: %+v", client.ProjectLimits)
 
