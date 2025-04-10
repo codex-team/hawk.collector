@@ -43,7 +43,7 @@ var (
 		Help: "Total number of WebSocket message processing errors",
 	})
 
-	// Connection errors 
+	// Connection errors
 	collectorWebsocketConnectionErrors = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "collector_websocket_connection_errors_total",
 		Help: "Total number of WebSocket connection errors",
@@ -63,16 +63,16 @@ var upgrader = websocket.FastHTTPUpgrader{
 func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	// Increment connection counter
 	collectorWebsocketConnectionsTotal.Inc()
-	
+
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		// Increment active connections gauge
 		collectorWebsocketActiveConnections.Inc()
 		// Ensure we decrement the gauge when connection ends
 		defer collectorWebsocketActiveConnections.Dec()
-		
+
 		// limit read size of MaxErrorCatcherMessageSize bytes
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
-		
+
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
@@ -83,7 +83,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 			// Increment messages received counter
 			collectorWebsocketMessagesReceived.Inc()
-			
+
 			log.Debugf("Websocket message: %s", message)
 
 			// process raw body via unified message handler
@@ -95,7 +95,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				log.Errorf("Websocket response: %v", err)
 				return
 			}
-			
+
 			// Increment messages sent counter
 			collectorWebsocketMessagesSent.Inc()
 		}
@@ -104,7 +104,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	// log if connection is closed ungracefully
 	if err != nil {
 		collectorWebsocketConnectionErrors.Inc()
-		// Do not catch WebSocket upgrade erros, since it's usually client malformed requests
+		// Do not catch WebSocket upgrade errors, since it's usually client malformed requests
 		if _, ok := err.(websocket.HandshakeError); !ok {
 			hawk.Catch(err)
 		}
