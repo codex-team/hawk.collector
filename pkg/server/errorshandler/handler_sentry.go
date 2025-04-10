@@ -61,15 +61,15 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		log.Debugf("Body: %s", sentryEnvelopeBody)
 	}
 
-	projectId, ok := handler.AccountsMongoDBClient.ValidTokens[hawkToken]
+	projectId, ok := handler.AccountsMongoDBClient.GetValidToken(hawkToken)
 	if !ok {
-		log.Debugf("Token %s is not in the accounts cache", hawkToken)
+		log.Warnf("Token %s is not in the accounts cache", hawkToken)
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", hawkToken)})
 		return
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, hawkToken)
 
-	projectLimits, ok := handler.AccountsMongoDBClient.ProjectLimits[projectId]
+	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
 		log.Warnf("Project %s is not in the projects limits cache", projectId)
 	} else {

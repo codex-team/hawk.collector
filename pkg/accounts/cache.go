@@ -66,7 +66,7 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 		return err
 	}
 
-	// Create a temporary map instead of directly modifying client.ValidTokens
+	// Create a temporary map instead of directly modifying client.validTokens
 	validTokensTmp := make(map[string]string)
 	
 	for _, project := range projects {
@@ -79,10 +79,10 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 	}
 	
 	// Atomically replace the map reference
-	client.ValidTokens = validTokensTmp
+	client.validTokens = validTokensTmp
 
-	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.ValidTokens))
-	log.Tracef("Current token cache state: %s", client.ValidTokens)
+	log.Debugf("Cache for MongoDB tokens successfully updates with %d tokens", len(client.validTokens))
+	log.Tracef("Current token cache state: %s", client.validTokens)
 
 	return nil
 }
@@ -141,7 +141,7 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		workspaceMap[workspace.WorkspaceID.Hex()] = workspace
 	}
 
-	// Create a temporary map instead of directly modifying client.ProjectLimits
+	// Create a temporary map instead of directly modifying client.projectLimits
 	projectLimitsTmp := make(map[string]rateLimitSettings)
 
 	// Process each project applying the priority rules
@@ -169,14 +169,14 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 			finalLimits.EventsPeriod = project.RateLimitSettings.EventsPeriod
 		}
 
-		// Add to temporary map instead of client.ProjectLimits
+		// Add to temporary map instead of client.projectLimits
 		projectLimitsTmp[projectID] = finalLimits
 	}
 
 	// Atomically replace the map reference
-	client.ProjectLimits = projectLimitsTmp
+	client.projectLimits = projectLimitsTmp
 
-	log.Tracef("Current projects limits cache state: %+v", client.ProjectLimits)
+	log.Tracef("Current projects limits cache state: %+v", client.projectLimits)
 
 	return nil
 }
