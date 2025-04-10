@@ -95,6 +95,7 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 
 		// Create a done channel to signal when to exit
 		done := make(chan struct{})
+		defer close(done)
 
 		// Start goroutine for ping
 		go func() {
@@ -103,7 +104,6 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 				case <-ticker.C:
 					if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
 						log.Errorf("Ping error: %v", err)
-						close(done)
 						return
 					}
 				case <-done:
@@ -117,14 +117,12 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			if err != nil {
 				collectorWebsocketConnectionErrors.Inc()
 				log.Errorf("Websocket error in ReadMessage: %v", err)
-				close(done)
 				break
 			}
 
 			// Reset the read deadline on successful read
 			if err := conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
 				log.Errorf("Failed to reset read deadline: %v", err)
-				close(done)
 				break
 			}
 
@@ -140,7 +138,6 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			if err = sendAnswerWebsocket(conn, messageType, response); err != nil {
 				collectorWebsocketMessageErrors.Inc()
 				log.Errorf("Websocket response: %v", err)
-				close(done)
 				return
 			}
 
