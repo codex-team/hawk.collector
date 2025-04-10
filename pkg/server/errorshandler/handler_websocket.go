@@ -14,38 +14,38 @@ import (
 // WebSocket metrics
 var (
 	// Current active WebSocket connections
-	websocketActiveConnections = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "websocket_connections_active",
+	collectorWebsocketActiveConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "collector_websocket_connections_active",
 		Help: "Number of currently active WebSocket connections",
 	})
 
 	// Total connections established
-	websocketConnectionsTotal = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "websocket_connections_total",
+	collectorWebsocketConnectionsTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "collector_websocket_connections_total",
 		Help: "Total number of WebSocket connections established",
 	})
 
 	// Messages received
-	websocketMessagesReceived = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "websocket_messages_received_total",
+	collectorWebsocketMessagesReceived = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "collector_websocket_messages_received_total",
 		Help: "Total number of WebSocket messages received",
 	})
 
 	// Messages sent
-	websocketMessagesSent = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "websocket_messages_sent_total",
+	collectorWebsocketMessagesSent = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "collector_websocket_messages_sent_total",
 		Help: "Total number of WebSocket messages sent",
 	})
 
 	// Message processing errors (non-connection errors)
-	websocketMessageErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "websocket_message_errors_total",
+	collectorWebsocketMessageErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "collector_websocket_message_errors_total",
 		Help: "Total number of WebSocket message processing errors",
 	})
 
 	// Connection errors 
-	websocketConnectionErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "websocket_connection_errors_total",
+	collectorWebsocketConnectionErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "collector_websocket_connection_errors_total",
 		Help: "Total number of WebSocket connection errors",
 	})
 )
@@ -62,13 +62,13 @@ var upgrader = websocket.FastHTTPUpgrader{
 // HandleWebsocket handles WebSocket connection
 func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 	// Increment connection counter
-	websocketConnectionsTotal.Inc()
+	collectorWebsocketConnectionsTotal.Inc()
 	
 	err := upgrader.Upgrade(ctx, func(conn *websocket.Conn) {
 		// Increment active connections gauge
-		websocketActiveConnections.Inc()
+		collectorWebsocketActiveConnections.Inc()
 		// Ensure we decrement the gauge when connection ends
-		defer websocketActiveConnections.Dec()
+		defer collectorWebsocketActiveConnections.Dec()
 		
 		// limit read size of MaxErrorCatcherMessageSize bytes
 		conn.SetReadLimit(int64(handler.MaxErrorCatcherMessageSize))
@@ -76,13 +76,13 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
-				websocketConnectionErrors.Inc()
+				collectorWebsocketConnectionErrors.Inc()
 				log.Errorf("Websocket error in ReadMessage: %v", err)
 				break
 			}
 
 			// Increment messages received counter
-			websocketMessagesReceived.Inc()
+			collectorWebsocketMessagesReceived.Inc()
 			
 			log.Debugf("Websocket message: %s", message)
 
@@ -91,19 +91,19 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 			log.Debugf("Websocket response: %s", response.Message)
 
 			if err = sendAnswerWebsocket(conn, messageType, response); err != nil {
-				websocketMessageErrors.Inc()
+				collectorWebsocketMessageErrors.Inc()
 				log.Errorf("Websocket response: %v", err)
 				return
 			}
 			
 			// Increment messages sent counter
-			websocketMessagesSent.Inc()
+			collectorWebsocketMessagesSent.Inc()
 		}
 	})
 
 	// log if connection is closed ungracefully
 	if err != nil {
-		websocketConnectionErrors.Inc()
+		collectorWebsocketConnectionErrors.Inc()
 		// Do not catch WebSocket upgrade erros, since it's usually client malformed requests
 		if _, ok := err.(websocket.HandshakeError); !ok {
 			hawk.Catch(err)
