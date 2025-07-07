@@ -3,6 +3,7 @@ package errorshandler
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	log "github.com/sirupsen/logrus"

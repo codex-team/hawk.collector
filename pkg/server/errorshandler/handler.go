@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 const DefaultQueueName = "errors/default"
@@ -92,8 +91,10 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{400, true, "Invalid payload JSON format"}
 	}
 
+	stringMessage := string(message)
+
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage), CatcherType: message.CatcherType, timestamp: time.Now().Unix()}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(stringMessage), CatcherType: message.CatcherType, timestamp: time.Now().Unix()}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
