@@ -87,18 +87,13 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	// Validate if message is a valid JSON
-	stringMessage := string(message.Payload)
-	if !gjson.Valid(stringMessage) {
+	stringPayload := string(message.Payload)
+	if !gjson.Valid(stringPayload) {
 		return ResponseMessage{400, true, "Invalid payload JSON format"}
 	}
 
-	modifiedMessage, err := sjson.Set(stringMessage, "timestamp", time.Now().Unix())
-	if err != nil {
-		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
-	}
-
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage), CatcherType: message.CatcherType}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(modifiedMessage), CatcherType: message.CatcherType, timestamp: time.Now().Unix()}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
