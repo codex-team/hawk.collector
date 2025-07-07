@@ -92,7 +92,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 
 	// convert message to JSON format
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(stringPayload), CatcherType: message.CatcherType, timestamp: time.Now().Unix()}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: []byte(stringPayload), CatcherType: message.CatcherType, Timestamp: time.Now().Unix()}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
