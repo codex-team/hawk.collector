@@ -102,7 +102,7 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
 	}
 
-	messageToSend := BrokerMessage{ProjectId: projectId, Payload: json.RawMessage(jsonMessage), CatcherType: CatcherType}
+	messageToSend := BrokerMessage{ProjectId: projectId, Payload: json.RawMessage(jsonMessage), CatcherType: CatcherType, timestamp: time.Now().Unix()}
 	payloadToSend, err := json.Marshal(messageToSend)
 	if err != nil {
 		log.Errorf("Message marshalling error: %v", err)
