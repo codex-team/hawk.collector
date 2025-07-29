@@ -17,7 +17,11 @@ func Init() error {
 
 	// load settings from ENV
 	if err := env.Parse(&cfg); err != nil {
-		return errors.New("Failed to parse ENV")
+		return errors.New("failed to parse ENV")
+	}
+
+	if !cfg.Enabled || cfg.Token == "" || cfg.URL == "" {
+		return errors.New("hawk Catcher is disabled")
 	}
 
 	// Initialize Catcher with Websocket transport

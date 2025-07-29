@@ -13,4 +13,7 @@ type HawkCatcherConfig struct {
 
 	// Hawk collector URL
 	URL string `env:"HAWK_URL"`
+
+	// Whether enable Hawk Catcher
+	Enabled bool `env:"HAWK_ENABLED" envDefault:"false"`
 }
