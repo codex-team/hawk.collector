@@ -23,6 +23,7 @@ type BrokerMessage struct {
 	ProjectId   string          `json:"projectId"`
 	Payload     json.RawMessage `json:"payload"`
 	CatcherType string          `json:"catcherType"`
+	Timestamp int64             `json:"timestamp"`
 }
 
 type RawSentryMessage struct {
