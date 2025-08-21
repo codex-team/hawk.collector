@@ -13,11 +13,26 @@ import (
 const SentryQueueName = "external/sentry"
 const CatcherType = "external/sentry"
 
+// helper for CORS
+func allowCORS(ctx *fasthttp.RequestCtx) {
+	h := &ctx.Response.Header
+	h.Set("Access-Control-Allow-Origin", "*")
+	h.Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	h.Set("Access-Control-Allow-Headers", "Content-Type, X-Sentry-Auth")
+	h.Set("Access-Control-Max-Age", "86400")
+}
+
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
 		log.Warnf("Incoming request with size %d", ctx.Request.Header.ContentLength())
 		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Request is too large"})
+		return
+	}
+
+	allowCORS(ctx)
+	if string(ctx.Method()) == fasthttp.MethodOptions {
+		ctx.SetStatusCode(fasthttp.StatusNoContent) // 204
 		return
 	}
 
