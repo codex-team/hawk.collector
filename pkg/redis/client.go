@@ -233,6 +233,41 @@ func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, event
 		return false, fmt.Errorf("failed to execute rate limit script: %w", err)
 	}
 
+	if result.(int64) == 0 {
+		key := fmt.Sprintf("requests:%s:%s", projectID, "rejected")
+		labels := map[string]string{
+			"type":    "error",
+			"status":  "ratelimited",
+			"project": projectID,
+		}
+		err = r.TSIncrBy(key, 1, time.Now().Unix(), labels)
+		if err != nil {
+			log.Errorf("failed to increment rejected requests time series: %v", err)
+		}
+	}
+
 	// Script returns 1 if rate limit is not exceeded, 0 if it is
 	return result.(int64) == 1, nil
+}
+
+// TSIncrBy increments a RedisTimeSeries key with labels and timestamp.
+func (r *RedisClient) TSIncrBy(
+	key string,
+	value int64,
+	timestamp int64,
+	labels map[string]string,
+) error {
+	// Prepare label arguments
+	labelArgs := []interface{}{"LABELS"}
+	for k, v := range labels {
+		labelArgs = append(labelArgs, k, v)
+	}
+
+	// Build the full command
+	args := []interface{}{key, value, "TIMESTAMP", timestamp * 1000} // Convert to milliseconds
+	args = append(args, labelArgs...)
+
+	cmdArgs := append([]interface{}{"TS.INCRBY"}, args...)
+	res := r.rdb.Do(r.ctx, cmdArgs...)
+	return res.Err()
 }
