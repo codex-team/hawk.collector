@@ -267,6 +267,7 @@ func (r *RedisClient) TSIncrBy(
 	args := []interface{}{key, value, "TIMESTAMP", timestamp * 1000} // Convert to milliseconds
 	args = append(args, labelArgs...)
 
+	log.Debugf("TS.INCRBY %v", args)
 	cmdArgs := append([]interface{}{"TS.INCRBY"}, args...)
 	res := r.rdb.Do(r.ctx, cmdArgs...)
 	return res.Err()
