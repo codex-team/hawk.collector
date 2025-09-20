@@ -1,4 +1,4 @@
-FROM golang:1.23-stretch as builder
+FROM golang:1.16-stretch as builder
 ARG BUILD_DIRECTORY=/build
 
 # disable CGO
