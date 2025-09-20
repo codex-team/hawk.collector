@@ -2,6 +2,7 @@ module github.com/codex-team/hawk.collector
 
 require (
 	github.com/alicebob/miniredis/v2 v2.34.0
+	github.com/andybalholm/brotli v1.0.2
 	github.com/caarlos0/env/v6 v6.6.0
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/codex-team/hawk.go v1.0.5
@@ -17,7 +18,6 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.8.0
-	github.com/tidwall/sjson v1.1.6
 	github.com/valyala/fasthttp v1.25.0
 	go.mongodb.org/mongo-driver v1.7.1
 )
