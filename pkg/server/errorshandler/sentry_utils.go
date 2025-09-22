@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-  log "github.com/sirupsen/logrus"
+
+	"github.com/andybalholm/brotli"
+	log "github.com/sirupsen/logrus"
 )
 
 func decompressGzipString(gzipString []byte) ([]byte, error) {
@@ -26,15 +28,27 @@ func decompressGzipString(gzipString []byte) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
+func decompressBrotliString(brotliString []byte) ([]byte, error) {
+	reader := brotli.NewReader(bytes.NewReader(brotliString))
+
+	var result bytes.Buffer
+	_, err := io.Copy(&result, reader)
+	if err != nil {
+		return []byte(""), fmt.Errorf("failed to decompress brotli data: %w", err)
+	}
+
+	return result.Bytes(), nil
+}
+
 func getSentryKeyFromAuth(auth string) (string, error) {
 	auth = strings.TrimPrefix(auth, "Sentry ")
 	pairs := strings.Split(auth, ",")
 	for _, pair := range pairs {
-	  pair = strings.TrimSpace(pair)
-	  kv := strings.SplitN(pair, "=", 2)
-	  if len(kv) == 2 && strings.TrimSpace(kv[0]) == "sentry_key" {
-		return strings.TrimSpace(kv[1]), nil
-	  }
+		pair = strings.TrimSpace(pair)
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) == 2 && strings.TrimSpace(kv[0]) == "sentry_key" {
+			return strings.TrimSpace(kv[1]), nil
+		}
 	}
 
 	log.Infof("Sentry key not found in auth header: %s", auth)
