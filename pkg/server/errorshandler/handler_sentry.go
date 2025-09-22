@@ -72,7 +72,15 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Failed to decompress gzip body"})
 			return
 		}
-		log.Debugf("Decompressed body: %s", sentryEnvelopeBody)
+		log.Debugf("Decompressed gzip body: %s", sentryEnvelopeBody)
+	} else if contentEncoding == "br" {
+		sentryEnvelopeBody, err = decompressBrotliString(sentryEnvelopeBody)
+		if err != nil {
+			log.Warnf("Failed to decompress brotli body: %s", err)
+			sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Failed to decompress brotli body"})
+			return
+		}
+		log.Debugf("Decompressed brotli body: %s", sentryEnvelopeBody)
 	} else {
 		log.Debugf("Body: %s", sentryEnvelopeBody)
 	}
