@@ -1,5 +1,6 @@
 # hawk.collector
 
+![License](https://img.shields.io/badge/license-BSL--1.1-orange)
 [![Go Report Card](https://goreportcard.com/badge/github.com/codex-team/hawk.collector)](https://goreportcard.com/report/github.com/codex-team/hawk.collector)
 
 Powerful module that can handle most errors around the web.
@@ -229,3 +230,7 @@ When a rate limit is exceeded, clients will receive a response like:
 }
 ```
 
+# License
+
+Source code is available under **Business Source License 1.1 (BSL 1.1)**.
+See [`LICENSE`](./LICENSE) for terms, including:
