@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -235,4 +236,82 @@ func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, event
 
 	// Script returns 1 if rate limit is not exceeded, 0 if it is
 	return result.(int64) == 1, nil
+}
+
+// TSCreateIfNotExists creates a RedisTimeSeries key if it doesn't exist.
+// It sets optional retention policy and attaches labels.
+func (r *RedisClient) TSCreateIfNotExists(
+	key string,
+	labels map[string]string,
+	retention time.Duration,
+) error {
+	exists, err := r.rdb.Exists(r.ctx, key).Result()
+	if err != nil {
+		return err
+	}
+	if exists > 0 {
+		return nil // already exists
+	}
+
+	labelArgs := []interface{}{"LABELS"}
+	for k, v := range labels {
+		labelArgs = append(labelArgs, k, v)
+	}
+
+	args := []interface{}{key}
+	if retention > 0 {
+		args = append(args, "RETENTION", int64(retention/time.Millisecond))
+	}
+	args = append(args, labelArgs...)
+
+	res := r.rdb.Do(r.ctx, append([]interface{}{"TS.CREATE"}, args...)...)
+	return res.Err()
+}
+
+// TSIncrBy increments a RedisTimeSeries key with labels and timestamp.
+// Uses RedisTimeSeries command TS.INCRBY.
+func (r *RedisClient) TSIncrBy(
+	key string,
+	value int64,
+	timestamp int64,
+	labels map[string]string,
+) error {
+	// Prepare label arguments
+	labelArgs := []interface{}{"LABELS"}
+	for k, v := range labels {
+		labelArgs = append(labelArgs, k, v)
+	}
+
+	// Use UnixMilli for more precision
+	if timestamp == 0 {
+		timestamp = time.Now().UnixMilli()
+	}
+
+	args := []interface{}{key, value, "TIMESTAMP", timestamp}
+	args = append(args, labelArgs...)
+
+	cmdArgs := append([]interface{}{"TS.INCRBY"}, args...)
+	res := r.rdb.Do(r.ctx, cmdArgs...)
+	return res.Err()
+}
+
+// SafeTSIncrBy ensures that a TS key exists and increments it safely.
+// Automatically creates the time series if it doesn't exist.
+func (r *RedisClient) SafeTSIncrBy(
+	key string,
+	value int64,
+	labels map[string]string,
+	retention time.Duration,
+) error {
+	timestamp := time.Now().UnixMilli()
+
+	err := r.TSIncrBy(key, value, timestamp, labels)
+	if err != nil && strings.Contains(err.Error(), "TSDB: key does not exist") {
+		log.Warnf("TS key %s does not exist, creating it...", key)
+		if err2 := r.TSCreateIfNotExists(key, labels, retention); err2 != nil {
+			return fmt.Errorf("failed to create TS: %w", err2)
+		}
+		return r.TSIncrBy(key, value, timestamp, labels)
+	}
+	return err
 }

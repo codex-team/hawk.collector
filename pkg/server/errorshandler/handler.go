@@ -107,6 +107,18 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	// increment processed errors counter
 	handler.ErrorsProcessed.Inc()
 
+	// increment time series for accepted requests
+	key := fmt.Sprintf("requests:%s:%s", projectId, "accepted")
+	labels := map[string]string{
+		"type":    "error",
+		"status":  "accepted",
+		"project": projectId,
+	}
+	err = handler.RedisClient.TSIncrBy(key, 1, time.Now().Unix(), labels)
+	if err != nil {
+		log.Errorf("failed to increment accepted requests TS: %v", err)
+	}
+
 	return ResponseMessage{200, false, "OK"}
 }
 
