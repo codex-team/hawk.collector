@@ -282,9 +282,8 @@ func (r *RedisClient) TSIncrBy(
 		labelArgs = append(labelArgs, k, v)
 	}
 
-	// Use UnixMilli for more precision
 	if timestamp == 0 {
-		timestamp = time.Now().UnixMilli()
+		timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	}
 
 	args := []interface{}{key, value, "TIMESTAMP", timestamp}
@@ -303,7 +302,7 @@ func (r *RedisClient) SafeTSIncrBy(
 	labels map[string]string,
 	retention time.Duration,
 ) error {
-	timestamp := time.Now().UnixMilli()
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	err := r.TSIncrBy(key, value, timestamp, labels)
 	if err != nil && strings.Contains(err.Error(), "TSDB: key does not exist") {
