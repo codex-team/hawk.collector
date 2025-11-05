@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -144,6 +145,8 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		s.ReleaseHandler.HandleHTTP(ctx)
 	case "/api/0/envelope/":
 		s.ErrorsHandler.HandleSentry(ctx)
+	case "/test/generate-timeseries":
+		s.HandleGenerateTestTimeSeries(ctx)
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
@@ -170,4 +173,40 @@ func (s *Server) UpdateBlacklist() error {
 	}
 
 	return nil
+}
+
+// HandleGenerateTestTimeSeries - endpoint for generating test time series data
+// POST /test/generate-timeseries with JSON body: {"projectId": "67d4adeccf25fa00ab563c32"}
+func (s *Server) HandleGenerateTestTimeSeries(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() {
+		ctx.Error("Method not allowed", fasthttp.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse request body
+	var reqBody struct {
+		ProjectId string `json:"projectId"`
+	}
+
+	if err := json.Unmarshal(ctx.PostBody(), &reqBody); err != nil {
+		ctx.Error("Invalid JSON", fasthttp.StatusBadRequest)
+		return
+	}
+
+	if reqBody.ProjectId == "" {
+		ctx.Error("projectId is required", fasthttp.StatusBadRequest)
+		return
+	}
+
+	log.Infof("Generating test time series data for project %s", reqBody.ProjectId)
+
+	// Generate test data
+	if err := s.ErrorsHandler.GenerateTestTimeSeriesData(reqBody.ProjectId); err != nil {
+		log.Errorf("Failed to generate test data: %v", err)
+		ctx.Error(fmt.Sprintf("Failed to generate test data: %v", err), fasthttp.StatusInternalServerError)
+		return
+	}
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBodyString(`{"success": true, "message": "Test data generated successfully"}`)
 }

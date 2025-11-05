@@ -253,16 +253,18 @@ func (r *RedisClient) TSCreateIfNotExists(
 		return nil // already exists
 	}
 
-	labelArgs := []interface{}{"LABELS"}
-	for k, v := range labels {
-		labelArgs = append(labelArgs, k, v)
-	}
-
 	args := []interface{}{key}
 	if retention > 0 {
 		args = append(args, "RETENTION", int64(retention/time.Millisecond))
 	}
-	args = append(args, labelArgs...)
+	// Allow duplicate timestamps by summing their values
+	args = append(args, "DUPLICATE_POLICY", "SUM")
+
+	// Add labels at the end
+	args = append(args, "LABELS")
+	for k, v := range labels {
+		args = append(args, k, v)
+	}
 
 	res := r.rdb.Do(r.ctx, append([]interface{}{"TS.CREATE"}, args...)...)
 	return res.Err()
@@ -311,6 +313,54 @@ func (r *RedisClient) SafeTSIncrBy(
 			return fmt.Errorf("failed to create TS: %w", err2)
 		}
 		return r.TSIncrBy(key, value, timestamp, labels)
+	}
+	return err
+}
+
+// TSAdd adds a sample to a RedisTimeSeries key with labels and timestamp.
+// Uses RedisTimeSeries command TS.ADD.
+func (r *RedisClient) TSAdd(
+	key string,
+	value int64,
+	timestamp int64,
+	labels map[string]string,
+) error {
+	// Prepare label arguments
+	labelArgs := []interface{}{"LABELS"}
+	for k, v := range labels {
+		labelArgs = append(labelArgs, k, v)
+	}
+
+	if timestamp == 0 {
+		timestamp = time.Now().UnixNano() / int64(time.Millisecond)
+	}
+
+	args := []interface{}{key, timestamp, value}
+	args = append(args, "ON_DUPLICATE", "SUM")
+	args = append(args, labelArgs...)
+
+	cmdArgs := append([]interface{}{"TS.ADD"}, args...)
+	res := r.rdb.Do(r.ctx, cmdArgs...)
+	return res.Err()
+}
+
+// SafeTSAdd ensures that a TS key exists and adds a sample safely.
+// Automatically creates the time series if it doesn't exist.
+func (r *RedisClient) SafeTSAdd(
+	key string,
+	value int64,
+	labels map[string]string,
+	retention time.Duration,
+) error {
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+	err := r.TSAdd(key, value, timestamp, labels)
+	if err != nil && strings.Contains(err.Error(), "TSDB: key does not exist") {
+		log.Warnf("TS key %s does not exist, creating it...", key)
+		if err2 := r.TSCreateIfNotExists(key, labels, retention); err2 != nil {
+			return fmt.Errorf("failed to create TS: %w", err2)
+		}
+		return r.TSAdd(key, value, timestamp, labels)
 	}
 	return err
 }
