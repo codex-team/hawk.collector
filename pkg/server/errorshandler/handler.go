@@ -118,17 +118,17 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		"project": projectId,
 	}
 
-	// minutely: храним 24 часа
+	// minutely: stored for 24 hours
 	if err := handler.RedisClient.SafeTSAdd(minutelyKey, 1, labels, 24*time.Hour); err != nil {
 		log.Errorf("failed to add to minutely TS: %v", err)
 	}
 
-	// hourly: store for 7 days
+	// hourly: stored for 7 days
 	if err := handler.RedisClient.SafeTSAdd(hourlyKey, 1, labels, 7*24*time.Hour); err != nil {
 		log.Errorf("failed to add to hourly TS: %v", err)
 	}
 
-	// daily: храним 90 дней
+	// daily: stored for 90 days
 	if err := handler.RedisClient.SafeTSAdd(dailyKey, 1, labels, 90*24*time.Hour); err != nil {
 		log.Errorf("failed to add to daily TS: %v", err)
 	}
