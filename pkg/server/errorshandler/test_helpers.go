@@ -33,7 +33,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		eventsCount := int64((hash % 11))
 		for i := int64(0); i < eventsCount; i++ {
 			timestamp := t.UnixNano()/int64(time.Millisecond) + i*100
-			if err := handler.RedisClient.TSAdd(minutelyKey, 1, timestamp, labels); err != nil {
+			if err := handler.RedisClient.TSIncrBy(minutelyKey, 1, timestamp, labels); err != nil {
 				return fmt.Errorf("failed to add minutely test data: %w", err)
 			}
 		}
@@ -48,7 +48,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		eventsCount := int64(5 + (hash % 90))
 		for i := int64(0); i < eventsCount; i++ {
 			timestamp := t.UnixNano()/int64(time.Millisecond) + i*1000
-			if err := handler.RedisClient.TSAdd(hourlyKey, 1, timestamp, labels); err != nil {
+			if err := handler.RedisClient.TSIncrBy(hourlyKey, 1, timestamp, labels); err != nil {
 				return fmt.Errorf("failed to add hourly test data: %w", err)
 			}
 		}
@@ -63,7 +63,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		eventsCount := int64(100 + (hash % 1800))
 		for i := int64(0); i < eventsCount; i++ {
 			timestamp := t.UnixNano()/int64(time.Millisecond) + i*10000
-			if err := handler.RedisClient.TSAdd(dailyKey, 1, timestamp, labels); err != nil {
+			if err := handler.RedisClient.TSIncrBy(dailyKey, 1, timestamp, labels); err != nil {
 				return fmt.Errorf("failed to add daily test data: %w", err)
 			}
 		}
