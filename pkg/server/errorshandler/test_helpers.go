@@ -29,15 +29,13 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	minuteStart := now.Add(-24 * time.Hour)
 	for t := minuteStart; t.Before(now); t = t.Add(1 * time.Minute) {
 		// Hash-based pseudo-random: 0-10 events per minute with realistic peaks/valleys
-		// Using multiplicative hash (2654435761 is a prime close to 2^32/phi) XOR with constant
-		// to generate deterministic but pseudo-random event counts based on timestamp
 		hash := (t.Unix() * 2654435761) ^ 0xdeadbeef
 		eventsCount := int64((hash % 11))
-
-		// Use TSIncrBy to increment counter for this minute
-		timestamp := t.UnixNano() / int64(time.Millisecond)
-		if err := handler.RedisClient.TSIncrBy(minutelyKey, eventsCount, timestamp, labels); err != nil {
-			return fmt.Errorf("failed to add minutely test data: %w", err)
+		for i := int64(0); i < eventsCount; i++ {
+			timestamp := t.UnixNano()/int64(time.Millisecond) + i*100
+			if err := handler.RedisClient.TSAdd(minutelyKey, 1, timestamp, labels); err != nil {
+				return fmt.Errorf("failed to add minutely test data: %w", err)
+			}
 		}
 	}
 
@@ -48,10 +46,11 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		// Hash-based pseudo-random: 5-95 events per hour
 		hash := (t.Unix() * 2654435761) ^ 0xcafebabe
 		eventsCount := int64(5 + (hash % 90))
-
-		timestamp := t.UnixNano() / int64(time.Millisecond)
-		if err := handler.RedisClient.TSIncrBy(hourlyKey, eventsCount, timestamp, labels); err != nil {
-			return fmt.Errorf("failed to add hourly test data: %w", err)
+		for i := int64(0); i < eventsCount; i++ {
+			timestamp := t.UnixNano()/int64(time.Millisecond) + i*1000
+			if err := handler.RedisClient.TSAdd(hourlyKey, 1, timestamp, labels); err != nil {
+				return fmt.Errorf("failed to add hourly test data: %w", err)
+			}
 		}
 	}
 
@@ -62,10 +61,11 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		// Hash-based pseudo-random: 100-1900 events per day
 		hash := (t.Unix() * 2654435761) ^ 0xbaadf00d
 		eventsCount := int64(100 + (hash % 1800))
-
-		timestamp := t.UnixNano() / int64(time.Millisecond)
-		if err := handler.RedisClient.TSIncrBy(dailyKey, eventsCount, timestamp, labels); err != nil {
-			return fmt.Errorf("failed to add daily test data: %w", err)
+		for i := int64(0); i < eventsCount; i++ {
+			timestamp := t.UnixNano()/int64(time.Millisecond) + i*10000
+			if err := handler.RedisClient.TSAdd(dailyKey, 1, timestamp, labels); err != nil {
+				return fmt.Errorf("failed to add daily test data: %w", err)
+			}
 		}
 	}
 
