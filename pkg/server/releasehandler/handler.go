@@ -31,6 +31,10 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	if err != nil {
 		return ResponseMessage{400, true, fmt.Sprintf("%s", err)}
 	}
+    // validate release value
+    if verr := validateRelease(release); verr != nil {
+        return ResponseMessage{400, true, verr.Error()}
+    }
 	_, commits := getSingleFormValue(form, "commits")
 
 	projectId, ok := handler.AccountsMongoDBClient.GetValidToken(token)
