@@ -51,15 +51,6 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
-	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
-	if err != nil {
-		log.Errorf("Failed to update rate limit: %s", err)
-		return ResponseMessage{402, true, "Failed to update rate limit"}
-	}
-	if !rateWithinLimit {
-		return ResponseMessage{402, true, "Rate limit exceeded"}
-	}
-
 	var files []ReleaseFile
 
 	for _, v := range form.File { // for each File part in multipart form
