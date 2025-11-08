@@ -43,9 +43,11 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		// Hash-based pseudo-random: 0-10 events per minute with realistic peaks/valleys
 		hash := (t.Unix() * 2654435761) ^ 0xdeadbeef
 		eventsCount := int64((hash % 11))
-		for i := int64(0); i < eventsCount; i++ {
-			timestamp := t.UnixNano()/int64(time.Millisecond) + i*100
-			if err := handler.RedisClient.TSIncrBy(minutelyKey, 1, timestamp, labels); err != nil {
+		// Use the minute timestamp for all events in this minute
+		// ON_DUPLICATE SUM will accumulate them
+		timestamp := t.UnixNano() / int64(time.Millisecond)
+		if eventsCount > 0 {
+			if err := handler.RedisClient.TSAdd(minutelyKey, eventsCount, timestamp, labels); err != nil {
 				return fmt.Errorf("failed to add minutely test data: %w", err)
 			}
 		}
@@ -58,11 +60,10 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		// Hash-based pseudo-random: 5-95 events per hour
 		hash := (t.Unix() * 2654435761) ^ 0xcafebabe
 		eventsCount := int64(5 + (hash % 90))
-		for i := int64(0); i < eventsCount; i++ {
-			timestamp := t.UnixNano()/int64(time.Millisecond) + i*1000
-			if err := handler.RedisClient.TSIncrBy(hourlyKey, 1, timestamp, labels); err != nil {
-				return fmt.Errorf("failed to add hourly test data: %w", err)
-			}
+		// Use the hour timestamp for all events in this hour
+		timestamp := t.UnixNano() / int64(time.Millisecond)
+		if err := handler.RedisClient.TSAdd(hourlyKey, eventsCount, timestamp, labels); err != nil {
+			return fmt.Errorf("failed to add hourly test data: %w", err)
 		}
 	}
 
@@ -73,11 +74,10 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		// Hash-based pseudo-random: 100-1900 events per day
 		hash := (t.Unix() * 2654435761) ^ 0xbaadf00d
 		eventsCount := int64(100 + (hash % 1800))
-		for i := int64(0); i < eventsCount; i++ {
-			timestamp := t.UnixNano()/int64(time.Millisecond) + i*10000
-			if err := handler.RedisClient.TSIncrBy(dailyKey, 1, timestamp, labels); err != nil {
-				return fmt.Errorf("failed to add daily test data: %w", err)
-			}
+		// Use the day timestamp for all events in this day
+		timestamp := t.UnixNano() / int64(time.Millisecond)
+		if err := handler.RedisClient.TSAdd(dailyKey, eventsCount, timestamp, labels); err != nil {
+			return fmt.Errorf("failed to add daily test data: %w", err)
 		}
 	}
 
