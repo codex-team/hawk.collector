@@ -8,13 +8,25 @@ import (
 )
 
 // GenerateTestTimeSeriesData - generates test data for minutely, hourly, and daily time series
-// This should be called after manually deleting the Redis keys
+// Automatically deletes existing keys before generating new data
 // Usage: handler.GenerateTestTimeSeriesData(projectId)
 func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	metricType := "events-accepted"
 	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely")
 	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly")
 	dailyKey := getTimeSeriesKey(projectId, metricType, "daily")
+
+	// Delete existing keys to avoid accumulation
+	log.Infof("Deleting existing test data keys for project %s...", projectId)
+	if err := handler.RedisClient.DeleteKey(minutelyKey); err != nil {
+		log.Warnf("Failed to delete minutely key: %v", err)
+	}
+	if err := handler.RedisClient.DeleteKey(hourlyKey); err != nil {
+		log.Warnf("Failed to delete hourly key: %v", err)
+	}
+	if err := handler.RedisClient.DeleteKey(dailyKey); err != nil {
+		log.Warnf("Failed to delete daily key: %v", err)
+	}
 
 	labels := map[string]string{
 		"type":    "error",
