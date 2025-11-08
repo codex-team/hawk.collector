@@ -314,3 +314,54 @@ func (r *RedisClient) SafeTSIncrBy(
 	}
 	return err
 }
+
+// DeleteKey deletes a key from Redis
+func (r *RedisClient) DeleteKey(key string) error {
+	res := r.rdb.Del(r.ctx, key)
+	return res.Err()
+}
+
+// TSAdd adds a sample to a time series
+func (r *RedisClient) TSAdd(
+	key string,
+	value int64,
+	timestamp int64,
+	labels map[string]string,
+) error {
+	// Prepare label arguments
+	labelArgs := []interface{}{"LABELS"}
+	for k, v := range labels {
+		labelArgs = append(labelArgs, k, v)
+	}
+
+	if timestamp == 0 {
+		timestamp = time.Now().UnixNano() / int64(time.Millisecond)
+	}
+
+	args := []interface{}{key, timestamp, value, "ON_DUPLICATE", "SUM"}
+	args = append(args, labelArgs...)
+
+	cmdArgs := append([]interface{}{"TS.ADD"}, args...)
+	res := r.rdb.Do(r.ctx, cmdArgs...)
+	return res.Err()
+}
+
+// SafeTSAdd ensures that a TS key exists and adds a sample safely
+func (r *RedisClient) SafeTSAdd(
+	key string,
+	value int64,
+	labels map[string]string,
+	retention time.Duration,
+) error {
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+	err := r.TSAdd(key, value, timestamp, labels)
+	if err != nil && strings.Contains(err.Error(), "TSDB: key does not exist") {
+		log.Warnf("TS key %s does not exist, creating it...", key)
+		if err2 := r.TSCreateIfNotExists(key, labels, retention); err2 != nil {
+			return fmt.Errorf("failed to create TS: %w", err2)
+		}
+		return r.TSAdd(key, value, timestamp, labels)
+	}
+	return err
+}
