@@ -149,17 +149,18 @@ func (handler *Handler) recordProjectMetrics(projectId, metricType string) {
 	}
 
 	// minutely: store for 24 hours
-	if err := handler.RedisClient.SafeTSIncrBy(minutelyKey, 1, labels, 24*time.Hour); err != nil {
-		log.Errorf("failed to increment minutely TS for %s: %v", metricType, err)
+	// Use TS.ADD with ON_DUPLICATE SUM to accumulate events within the same timestamp
+	if err := handler.RedisClient.SafeTSAdd(minutelyKey, 1, labels, 24*time.Hour); err != nil {
+		log.Errorf("failed to add minutely TS for %s: %v", metricType, err)
 	}
 
 	// hourly: store for 7 days
-	if err := handler.RedisClient.SafeTSIncrBy(hourlyKey, 1, labels, 7*24*time.Hour); err != nil {
-		log.Errorf("failed to increment hourly TS for %s: %v", metricType, err)
+	if err := handler.RedisClient.SafeTSAdd(hourlyKey, 1, labels, 7*24*time.Hour); err != nil {
+		log.Errorf("failed to add hourly TS for %s: %v", metricType, err)
 	}
 
 	// daily: store for 90 days
-	if err := handler.RedisClient.SafeTSIncrBy(dailyKey, 1, labels, 90*24*time.Hour); err != nil {
-		log.Errorf("failed to increment daily TS for %s: %v", metricType, err)
+	if err := handler.RedisClient.SafeTSAdd(dailyKey, 1, labels, 90*24*time.Hour); err != nil {
+		log.Errorf("failed to add daily TS for %s: %v", metricType, err)
 	}
 }
