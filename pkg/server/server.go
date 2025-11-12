@@ -145,8 +145,8 @@ func (s *Server) handler(ctx *fasthttp.RequestCtx) {
 		s.ReleaseHandler.HandleHTTP(ctx)
 	case "/api/0/envelope/":
 		s.ErrorsHandler.HandleSentry(ctx)
-	case "/test/generate-timeseries":
-		s.HandleGenerateTestTimeSeries(ctx)
+	// case "/test/generate-timeseries":
+	// 	s.HandleGenerateTestTimeSeries(ctx)
 	default:
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	}
