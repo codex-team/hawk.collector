@@ -107,6 +107,9 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	// increment processed errors counter
 	handler.ErrorsProcessed.Inc()
 
+	// record project metrics
+	handler.recordProjectMetrics(projectId, "events-accepted")
+
 	return ResponseMessage{200, false, "OK"}
 }
 
@@ -125,4 +128,39 @@ func GetQueueCache(nonDefaultQueues []string) map[string]bool {
 		cache[fmt.Sprintf("errors/%s", queue)] = true
 	}
 	return cache
+}
+
+// getTimeSeriesKey generates a Redis TimeSeries key for project metrics
+func getTimeSeriesKey(projectId, metricType, granularity string) string {
+	return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
+}
+
+// recordProjectMetrics records project metrics to Redis TimeSeries
+// metricType can be: "events-accepted", "events-rate-limited", etc.
+func (handler *Handler) recordProjectMetrics(projectId, metricType string) {
+	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely")
+	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly")
+	dailyKey := getTimeSeriesKey(projectId, metricType, "daily")
+
+	labels := map[string]string{
+		"type":    "error",
+		"status":  metricType,
+		"project": projectId,
+	}
+
+	// minutely: store for 24 hours
+	// Use TS.ADD with ON_DUPLICATE SUM to accumulate events within the same timestamp
+	if err := handler.RedisClient.SafeTSAdd(minutelyKey, 1, labels, 24*time.Hour); err != nil {
+		log.Errorf("failed to add minutely TS for %s: %v", metricType, err)
+	}
+
+	// hourly: store for 7 days
+	if err := handler.RedisClient.SafeTSAdd(hourlyKey, 1, labels, 7*24*time.Hour); err != nil {
+		log.Errorf("failed to add hourly TS for %s: %v", metricType, err)
+	}
+
+	// daily: store for 90 days
+	if err := handler.RedisClient.SafeTSAdd(dailyKey, 1, labels, 90*24*time.Hour); err != nil {
+		log.Errorf("failed to add daily TS for %s: %v", metricType, err)
+	}
 }
