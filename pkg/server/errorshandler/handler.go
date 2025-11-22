@@ -73,6 +73,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
+		handler.recordProjectMetrics(projectId, "events-rate-limited")
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
@@ -82,6 +83,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{402, true, "Failed to update rate limit"}
 	}
 	if !rateWithinLimit {
+		handler.recordProjectMetrics(projectId, "events-rate-limited")
 		return ResponseMessage{402, true, "Rate limit exceeded"}
 	}
 
