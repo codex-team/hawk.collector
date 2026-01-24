@@ -157,7 +157,7 @@ func TestCheckRateLimitConcurrent(t *testing.T) {
 		t.Fatalf("failed to seed rate limit: %v", err)
 	}
 
-	var rejectedCount int = 0
+	var rejectedCount int64 = 0
 
 	done := make(chan bool)
 
