@@ -191,10 +191,10 @@ func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, event
 		local limit = tonumber(ARGV[3])
 		local period = tonumber(ARGV[4])
 
+		-- Read current window value
 		local current = redis.call('HGET', key, field)
 		if not current then
-			-- No existing record, create new window
-			redis.call('HSET', key, field, now .. ':1')
+			-- No existing record, event count is within limit
 			return 1
 		end
 
@@ -202,21 +202,17 @@ func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, event
 		timestamp = tonumber(timestamp)
 		count = tonumber(count)
 
-		-- Check if we're in a new time window
+		-- If we're in a new time window - event count is within limit
 		if now - timestamp >= period then
-			-- Reset for new window
-			redis.call('HSET', key, field, now .. ':1')
 			return 1
 		end
 
-		-- Check if incrementing would exceed limit
-		if count + 1 > limit then
-			return 0
+		-- Still in current window: check if event count is within limit
+		if count < limit then
+			return 1
 		end
 
-		-- Increment counter
-		redis.call('HSET', key, field, timestamp .. ':' .. (count + 1))
-		return 1
+		return 0
 	`
 
 	// Run the script
