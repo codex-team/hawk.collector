@@ -176,8 +176,8 @@ func (r *RedisClient) CheckAvailability() bool {
 	return pong == "PONG"
 }
 
-// UpdateRateLimit checks and updates the rate limit for a project using a Lua script
-func (r *RedisClient) UpdateRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
+// CheckRateLimit checks and updates the rate limit for a project using a Lua script
+func (r *RedisClient) CheckRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
 	// If eventsLimit is 0, we don't need to update the rate limit
 	if eventsLimit == 0 {
 		return true, nil

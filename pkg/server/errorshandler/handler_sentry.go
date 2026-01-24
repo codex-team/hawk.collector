@@ -107,7 +107,7 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	rateWithinLimit, err := handler.RedisClient.CheckRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
 	if err != nil {
 		log.Errorf("Failed to update rate limit: %s", err)
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Failed to update rate limit"})

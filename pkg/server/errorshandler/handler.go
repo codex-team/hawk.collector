@@ -77,7 +77,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
-	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	rateWithinLimit, err := handler.RedisClient.CheckRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
 	if err != nil {
 		log.Errorf("Failed to update rate limit: %s", err)
 		return ResponseMessage{402, true, "Failed to update rate limit"}
