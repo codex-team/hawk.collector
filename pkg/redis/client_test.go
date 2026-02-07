@@ -29,7 +29,7 @@ func setupTestRedis(t *testing.T) (*RedisClient, *miniredis.Miniredis) {
 	return client, mr
 }
 
-func TestUpdateRateLimit(t *testing.T) {
+func TestCheckRateLimit(t *testing.T) {
 	client, mr := setupTestRedis(t)
 	defer mr.Close()
 
@@ -79,7 +79,7 @@ func TestUpdateRateLimit(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:         "should reset count after period expires",
+			name:         "should ignore existing counter (treat as allowed) after period expires",
 			projectID:    "project4",
 			eventsLimit:  5,
 			eventsPeriod: 60,
@@ -101,12 +101,16 @@ func TestUpdateRateLimit(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "should handle multiple calls up to limit",
+			name:         "should fail if limit is already reached",
 			projectID:    "project6",
 			eventsLimit:  3,
 			eventsPeriod: 60,
-			calls:        4,
-			wantAllowed:  false, // Last call should be denied
+			setup: func() {
+				client.rdb.HSet(client.ctx, "rate_limits", "project6",
+					fmt.Sprintf("%d:%d", time.Now().Unix(), 3))
+			},
+			calls: 4,
+			wantAllowed:  false,
 			wantErr:      false,
 		},
 	}
@@ -123,7 +127,7 @@ func TestUpdateRateLimit(t *testing.T) {
 
 			// Make the specified number of calls
 			for i := 0; i < tt.calls; i++ {
-				lastAllowed, lastErr = client.UpdateRateLimit(tt.projectID, tt.eventsLimit, tt.eventsPeriod)
+				lastAllowed, lastErr = client.CheckRateLimit(tt.projectID, tt.eventsLimit, tt.eventsPeriod)
 			}
 
 			if tt.wantErr {
@@ -136,7 +140,7 @@ func TestUpdateRateLimit(t *testing.T) {
 	}
 }
 
-func TestUpdateRateLimitConcurrent(t *testing.T) {
+func TestCheckRateLimitConcurrent(t *testing.T) {
 	client, mr := setupTestRedis(t)
 	defer mr.Close()
 
@@ -148,7 +152,12 @@ func TestUpdateRateLimitConcurrent(t *testing.T) {
 		callsPerRoutine = 20
 	)
 
-	var rejectedCount int = 0
+	initialValue := fmt.Sprintf("%d:%d", time.Now().Unix(), eventsLimit)
+	if err := client.rdb.HSet(client.ctx, "rate_limits", projectID, initialValue).Err(); err != nil {
+		t.Fatalf("failed to seed rate limit: %v", err)
+	}
+
+	var rejectedCount int64 = 0
 
 	done := make(chan bool)
 
@@ -156,7 +165,7 @@ func TestUpdateRateLimitConcurrent(t *testing.T) {
 	for i := 0; i < goroutines; i++ {
 		go func() {
 			for j := 0; j < callsPerRoutine; j++ {
-				allowed, err := client.UpdateRateLimit(projectID, eventsLimit, eventsPeriod)
+				allowed, err := client.CheckRateLimit(projectID, eventsLimit, eventsPeriod)
 				assert.NoError(t, err)
 				if !allowed {
 					rejectedCount++
@@ -171,17 +180,11 @@ func TestUpdateRateLimitConcurrent(t *testing.T) {
 		<-done
 	}
 
-	// Verify the total number of successful updates doesn't exceed the limit
+	// Verify the stored value remains unchanged and all checks are denied
 	val, err := client.rdb.HGet(client.ctx, "rate_limits", projectID).Result()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, val)
-
-	// The total count should not exceed the events limit
-	count := 0
-	_, err = fmt.Sscanf(val, "%d:%d", &count, &count)
-	assert.NoError(t, err)
-	assert.Equal(t, count, eventsLimit)
-	assert.Equal(t, rejectedCount, goroutines*callsPerRoutine-eventsLimit)
-	t.Logf("count: %d", count)
+	assert.Equal(t, initialValue, val)
+	assert.Equal(t, int64(goroutines*callsPerRoutine), rejectedCount)
+	t.Logf("stored value: %s", val)
 	t.Logf("rejectedCount: %d", rejectedCount)
 }

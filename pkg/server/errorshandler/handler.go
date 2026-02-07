@@ -77,7 +77,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
-	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	rateWithinLimit, err := handler.RedisClient.CheckRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
 	if err != nil {
 		log.Errorf("Failed to update rate limit: %s", err)
 		return ResponseMessage{402, true, "Failed to update rate limit"}
@@ -134,7 +134,7 @@ func GetQueueCache(nonDefaultQueues []string) map[string]bool {
 
 // getTimeSeriesKey generates a Redis TimeSeries key for project metrics
 func getTimeSeriesKey(projectId, metricType, granularity string) string {
-	return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
+	return fmt.Sprintf("ts:collected-project-%s:%s:%s", metricType, projectId, granularity)
 }
 
 // recordProjectMetrics records project metrics to Redis TimeSeries
