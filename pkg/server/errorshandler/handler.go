@@ -134,7 +134,7 @@ func GetQueueCache(nonDefaultQueues []string) map[string]bool {
 
 // getTimeSeriesKey generates a Redis TimeSeries key for project metrics
 func getTimeSeriesKey(projectId, metricType, granularity string) string {
-	return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
+	return fmt.Sprintf("ts:collected-project-%s:%s:%s", metricType, projectId, granularity)
 }
 
 // recordProjectMetrics records project metrics to Redis TimeSeries
