@@ -12,9 +12,9 @@ import (
 // Usage: handler.GenerateTestTimeSeriesData(projectId)
 func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	metricType := "events-accepted"
-	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely")
-	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly")
-	dailyKey := getTimeSeriesKey(projectId, metricType, "daily")
+	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely", true)
+	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly", true)
+	dailyKey := getTimeSeriesKey(projectId, metricType, "daily", true)
 
 	// Delete existing keys to avoid accumulation
 	log.Infof("Deleting existing test data keys for project %s...", projectId)

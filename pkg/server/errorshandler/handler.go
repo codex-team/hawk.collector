@@ -73,7 +73,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
-		handler.recordProjectMetrics(projectId, "events-rate-limited")
+		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
 
@@ -83,7 +83,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		return ResponseMessage{402, true, "Failed to update rate limit"}
 	}
 	if !rateWithinLimit {
-		handler.recordProjectMetrics(projectId, "events-rate-limited")
+		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
 		return ResponseMessage{402, true, "Rate limit exceeded"}
 	}
 
@@ -110,7 +110,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	handler.ErrorsProcessed.Inc()
 
 	// record project metrics
-	handler.recordProjectMetrics(projectId, "events-accepted")
+	handler.recordProjectMetrics(projectId, "events-accepted", true)
 
 	return ResponseMessage{200, false, "OK"}
 }
@@ -133,20 +133,23 @@ func GetQueueCache(nonDefaultQueues []string) map[string]bool {
 }
 
 // getTimeSeriesKey generates a Redis TimeSeries key for project metrics
-func getTimeSeriesKey(projectId, metricType, granularity string) string {
-	if metricType == "events-rate-limited" {
-		return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
+func getTimeSeriesKey(projectId, metricType, granularity string, isSystemMetric bool) string {
+	// flag determines which counter would be incremented
+	if isSystemMetric {
+		// ts:collector-project-%s:%s:%s could be used in admin
+		return fmt.Sprintf("ts:collector-project-%s:%s:%s", metricType, projectId, granularity)
 	}
 
-	return fmt.Sprintf("ts:collector-project-%s:%s:%s", metricType, projectId, granularity)
+	// ts:project-%s:%s:%s is used in api for chart retrieving
+	return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
 }
 
 // recordProjectMetrics records project metrics to Redis TimeSeries
 // metricType can be: "events-accepted", "events-rate-limited", etc.
-func (handler *Handler) recordProjectMetrics(projectId, metricType string) {
-	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely")
-	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly")
-	dailyKey := getTimeSeriesKey(projectId, metricType, "daily")
+func (handler *Handler) recordProjectMetrics(projectId, metricType string, isSystemMetric bool) {
+	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely", isSystemMetric)
+	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly", isSystemMetric)
+	dailyKey := getTimeSeriesKey(projectId, metricType, "daily", isSystemMetric)
 
 	labels := map[string]string{
 		"type":    "error",
