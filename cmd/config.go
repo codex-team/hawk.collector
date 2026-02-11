@@ -34,6 +34,13 @@ type Config struct {
 	// Log level
 	LogLevel string `env:"LOG_LEVEL"`
 
+	// Deployment environment label (local/staging/production)
+	DeploymentEnvironment string `env:"DEPLOYMENT_ENVIRONMENT"`
+
+	// OpenTelemetry configuration
+	OTelLogsEndpoint string `env:"OTEL_LOGS_ENDPOINT"`
+	ServiceName      string `env:"SERVICE_NAME" defaultEnv:"collector"`
+
 	// Metrics listen host:port
 	MetricsListen string `env:"METRICS_LISTEN"`
 

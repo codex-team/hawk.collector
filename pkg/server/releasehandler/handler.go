@@ -10,8 +10,8 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/accounts"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"github.com/codex-team/hawk.collector/pkg/redis"
-	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -38,13 +38,14 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 		log.Debugf("Token %s is not in the accounts cache", token)
 		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", token)}
 	}
-	log.Debugf("Found project with ID %s for integration token %s", projectId, token)
+	projectLogger := log.With("projectId", projectId)
+	projectLogger.Debug(fmt.Sprintf("Found project with ID %s for integration token %s", projectId, token))
 
 	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
-		log.Warnf("Project %s is not in the projects limits cache", projectId)
+		projectLogger.Warn(fmt.Sprintf("Project %s is not in the projects limits cache", projectId))
 	} else {
-		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+		projectLogger.Debug(fmt.Sprintf("Project %s limits: %+v", projectId, projectLimits))
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
@@ -66,7 +67,7 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 			}
 
 			// append file name and content to files array
-			log.Debugf("[release] Got filename: %s", header.Filename)
+			projectLogger.Debug(fmt.Sprintf("[release] Got filename: %s", header.Filename))
 			files = append(files, ReleaseFile{Name: header.Filename, Payload: buf.Bytes()})
 		}
 	}
@@ -82,7 +83,7 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	messageToSend := ReleaseMessage{ProjectId: projectId, Type: AddReleaseType, Payload: ReleaseMessagePayload{Files: files, Release: release, Commits: []byte(commits)}}
 	rawMessage, err := json.Marshal(messageToSend)
 	if err != nil {
-		log.Errorf("Message marshalling error: %v", err)
+		projectLogger.Error(fmt.Sprintf("Message marshalling error: %v", err))
 		return ResponseMessage{400, true, "Cannot encode message to JSON"}
 	}
 

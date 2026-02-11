@@ -2,9 +2,11 @@ package collector
 
 import (
 	"context"
-	"os"
+	"fmt"
+	"log/slog"
 
 	"github.com/codex-team/hawk.collector/pkg/accounts"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/codex-team/hawk.collector/cmd"
@@ -15,7 +17,6 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server"
 	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
 )
 
 // RunCommand - Run server in the production mode
@@ -27,48 +28,49 @@ type RunCommand struct {
 
 // Execute Run server - Load configuration file and start server
 func (x *RunCommand) Execute(args []string) error {
-	if err := godotenv.Load(); err != nil {
-		log.Println("File .env not found, reading configuration from ENV")
+	envLoadErr := godotenv.Load()
+	var err error
+
+	// setup logging as early as possible so all logs go to stdout + OTEL
+	otelShutdown := log.SetupFromEnv(context.Background())
+	defer func() {
+		if shutdownErr := otelShutdown(context.Background()); shutdownErr != nil {
+			slog.Warn("failed to shutdown OTLP logger", "error", shutdownErr)
+		}
+	}()
+
+	if envLoadErr != nil {
+		slog.Info("File .env not found, reading configuration from ENV")
 	}
 
 	// load config from .env
 	var cfg cmd.Config
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("Failed to parse ENV")
+		slog.Error("Failed to parse ENV", "error", err)
+		return err
 	}
-
-	// setup logging and set log level from config
-	level, err := log.ParseLevel(cfg.LogLevel)
-	if err != nil {
-		level = log.ErrorLevel
-	}
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(level)
-	log.Infof("✓ Log level set on %s", level)
+	slog.InfoContext(context.Background(), fmt.Sprintf("collector started on %s", cfg.Listen), "event", "startup")
 
 	// Initialize Hawk Catcher
 	if cfg.HawkEnabled {
 		err = hawk.Init()
 		if err != nil {
-			log.Errorf("✗ Cannot initialize Hawk Catcher: %s", err)
+			slog.Error("✗ Cannot initialize Hawk Catcher", "error", err)
 		} else {
 			go hawk.HawkCatcher.Run()
 			defer hawk.HawkCatcher.Stop()
-			log.Infof("✓ Hawk Catcher initialized on %s", hawk.HawkCatcher.GetURL())
+			slog.Info("✓ Hawk Catcher initialized", "url", hawk.HawkCatcher.GetURL())
 		}
 	}
 
 	// connect to AMQP broker with retries
-	log.Infof("Connecting to RabbitMQ %s", cfg.BrokerURL)
+	slog.Info("Connecting to RabbitMQ", "url", cfg.BrokerURL)
 	brokerObj := broker.New(cfg.BrokerURL, cfg.Exchange)
 	brokerObj.Init()
-	log.Infof("✓ Broker initialized on %s", cfg.BrokerURL)
+	slog.Info("✓ Broker initialized", "url", cfg.BrokerURL)
 
 	// connect to Redis
-	log.Infof("Connecting to Redis %s", cfg.RedisURL)
+	slog.Info("Connecting to Redis", "url", cfg.RedisURL)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -84,7 +86,7 @@ func (x *RunCommand) Execute(args []string) error {
 
 	err = redisClient.LoadBlockedIDs()
 	if err != nil {
-		log.Errorf("failed to load blocked IDs from Redis")
+		slog.Error("failed to load blocked IDs from Redis", "error", err)
 	}
 
 	// connect to accounts MongoDB
@@ -93,12 +95,12 @@ func (x *RunCommand) Execute(args []string) error {
 
 	err = accountsClient.UpdateTokenCache()
 	if err != nil {
-		log.Errorf("failed to update token cache: %s", err)
+		slog.Error("failed to update token cache", "error", err)
 	}
 
 	err = accountsClient.UpdateProjectsLimitsCache()
 	if err != nil {
-		log.Errorf("failed to update projects limits cache: %s", err)
+		slog.Error("failed to update projects limits cache", "error", err)
 	}
 
 	go periodic.RunPeriodically(accountsClient.UpdateTokenCache, cfg.TokenUpdatePeriod, doneAccountsContext)
@@ -112,7 +114,7 @@ func (x *RunCommand) Execute(args []string) error {
 	go periodic.RunPeriodically(redisClient.LoadBlockedIDs, cfg.BlockedIDsLoad, done)
 	go periodic.RunPeriodically(serverObj.UpdateBlacklist, cfg.BlacklistUpdatePeriod, done)
 	defer close(done)
-	log.Info("✓ Redis client initialized")
+	slog.Info("✓ Redis client initialized")
 
 	// listen and serve prometheus metrics
 	go metrics.RunServer(cfg.MetricsListen)

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/andybalholm/brotli"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 )
 
 func decompressGzipString(gzipString []byte) ([]byte, error) {
