@@ -74,7 +74,7 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 		if err == nil {
 			validTokensTmp[integrationSecret] = project.ProjectID.Hex()
 		} else {
-			log.Errorf("Integration token %s is invalid: %s", project.Token, err)
+			log.Debugf("Integration token %s is invalid: %s", project.Token, err)
 		}
 	}
 	
