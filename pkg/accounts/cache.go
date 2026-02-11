@@ -11,7 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -74,7 +74,7 @@ func (client *AccountsMongoDBClient) UpdateTokenCache() error {
 		if err == nil {
 			validTokensTmp[integrationSecret] = project.ProjectID.Hex()
 		} else {
-			log.Errorf("Integration token %s is invalid: %s", project.Token, err)
+			log.Debugf("Integration token %s is invalid: %s", project.Token, err)
 		}
 	}
 	
@@ -148,8 +148,6 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 	for _, project := range projects {
 		projectID := project.ProjectID.Hex()
 		var finalLimits rateLimitSettings
-
-		log.Tracef("Project with id %s and limits %+v", projectID, project.RateLimitSettings)
 
 		if workspace, exists := workspaceMap[project.WorkspaceID.Hex()]; exists {
 			finalLimits = workspace.TariffPlan.RateLimitSettings

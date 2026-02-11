@@ -3,7 +3,7 @@ package metrics
 import (
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"net/http"
 )
 

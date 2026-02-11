@@ -13,12 +13,12 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/alerts"
 	"github.com/codex-team/hawk.collector/pkg/broker"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/codex-team/hawk.collector/pkg/server/errorshandler"
 	"github.com/codex-team/hawk.collector/pkg/server/releasehandler"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
 
@@ -198,11 +198,12 @@ func (s *Server) HandleGenerateTestTimeSeries(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	log.Infof("Generating test time series data for project %s", reqBody.ProjectId)
+	projectLogger := log.With("projectId", reqBody.ProjectId)
+	projectLogger.Info(fmt.Sprintf("Generating test time series data for project %s", reqBody.ProjectId))
 
 	// Generate test data
 	if err := s.ErrorsHandler.GenerateTestTimeSeriesData(reqBody.ProjectId); err != nil {
-		log.Errorf("Failed to generate test data: %v", err)
+		projectLogger.Error(fmt.Sprintf("Failed to generate test data: %v", err))
 		ctx.Error(fmt.Sprintf("Failed to generate test data: %v", err), fasthttp.StatusInternalServerError)
 		return
 	}

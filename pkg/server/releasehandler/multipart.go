@@ -2,7 +2,7 @@ package releasehandler
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"mime/multipart"
 )
 

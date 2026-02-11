@@ -3,7 +3,7 @@ package periodic
 import (
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 )
 
 type PeriodicFunc func() error

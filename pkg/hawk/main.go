@@ -5,7 +5,7 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	hawkGo "github.com/codex-team/hawk.go"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 )
 
 // Global catcher instance

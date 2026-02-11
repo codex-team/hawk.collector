@@ -8,9 +8,9 @@ import (
 	"github.com/codex-team/hawk.collector/pkg/accounts"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"github.com/codex-team/hawk.collector/pkg/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -62,13 +62,14 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 		log.Debugf("Token %s is not in the accounts cache", integrationSecret)
 		return ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", integrationSecret)}
 	}
-	log.Debugf("Found project with ID %s for integration token %s", projectId, integrationSecret)
+	projectLogger := log.With("projectId", projectId)
+	projectLogger.Debug(fmt.Sprintf("Found project with ID %s for integration token %s", projectId, integrationSecret))
 
 	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
-		log.Warnf("Project %s is not in the projects limits cache", projectId)
+		projectLogger.Warn(fmt.Sprintf("Project %s is not in the projects limits cache", projectId))
 	} else {
-		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+		projectLogger.Debug(fmt.Sprintf("Project %s limits: %+v", projectId, projectLimits))
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
@@ -79,7 +80,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
 	if err != nil {
-		log.Errorf("Failed to update rate limit: %s", err)
+		projectLogger.Error(fmt.Sprintf("Failed to update rate limit: %s", err))
 		return ResponseMessage{402, true, "Failed to update rate limit"}
 	}
 	if !rateWithinLimit {
@@ -103,7 +104,7 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	// send serialized message to a broker
 	brokerMessage := broker.Message{Payload: rawMessage, Route: handler.determineQueue(message.CatcherType)}
-	log.Debugf("Send to queue: %s", brokerMessage)
+	projectLogger.Debug(fmt.Sprintf("Send to queue: %s", brokerMessage))
 	handler.Broker.Chan <- brokerMessage
 
 	// increment processed errors counter
@@ -140,6 +141,7 @@ func getTimeSeriesKey(projectId, metricType, granularity string) string {
 // recordProjectMetrics records project metrics to Redis TimeSeries
 // metricType can be: "events-accepted", "events-rate-limited", etc.
 func (handler *Handler) recordProjectMetrics(projectId, metricType string) {
+	projectLogger := log.With("projectId", projectId)
 	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely")
 	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly")
 	dailyKey := getTimeSeriesKey(projectId, metricType, "daily")
@@ -153,16 +155,16 @@ func (handler *Handler) recordProjectMetrics(projectId, metricType string) {
 	// minutely: store for 24 hours
 	// Use TS.ADD with ON_DUPLICATE SUM to accumulate events within the same timestamp
 	if err := handler.RedisClient.SafeTSAdd(minutelyKey, 1, labels, 24*time.Hour); err != nil {
-		log.Errorf("failed to add minutely TS for %s: %v", metricType, err)
+		projectLogger.Error(fmt.Sprintf("failed to add minutely TS for %s: %v", metricType, err))
 	}
 
 	// hourly: store for 7 days
 	if err := handler.RedisClient.SafeTSAdd(hourlyKey, 1, labels, 7*24*time.Hour); err != nil {
-		log.Errorf("failed to add hourly TS for %s: %v", metricType, err)
+		projectLogger.Error(fmt.Sprintf("failed to add hourly TS for %s: %v", metricType, err))
 	}
 
 	// daily: store for 90 days
 	if err := handler.RedisClient.SafeTSAdd(dailyKey, 1, labels, 90*24*time.Hour); err != nil {
-		log.Errorf("failed to add daily TS for %s: %v", metricType, err)
+		projectLogger.Error(fmt.Sprintf("failed to add daily TS for %s: %v", metricType, err))
 	}
 }

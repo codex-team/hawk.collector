@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"github.com/valyala/fasthttp"
 )
 
@@ -91,13 +91,14 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, fmt.Sprintf("Integration token invalid: %s", hawkToken)})
 		return
 	}
-	log.Debugf("Found project with ID %s for integration token %s", projectId, hawkToken)
+	projectLogger := log.With("projectId", projectId)
+	projectLogger.Debug(fmt.Sprintf("Found project with ID %s for integration token %s", projectId, hawkToken))
 
 	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
-		log.Warnf("Project %s is not in the projects limits cache", projectId)
+		projectLogger.Warn(fmt.Sprintf("Project %s is not in the projects limits cache", projectId))
 	} else {
-		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+		projectLogger.Debug(fmt.Sprintf("Project %s limits: %+v", projectId, projectLimits))
 	}
 
 	if handler.RedisClient.IsBlocked(projectId) {
@@ -109,7 +110,7 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 
 	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
 	if err != nil {
-		log.Errorf("Failed to update rate limit: %s", err)
+		projectLogger.Error(fmt.Sprintf("Failed to update rate limit: %s", err))
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Failed to update rate limit"})
 		return
 	}
@@ -131,13 +132,13 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	messageToSend := BrokerMessage{Timestamp: time.Now().Unix(), ProjectId: projectId, Payload: json.RawMessage(jsonMessage), CatcherType: CatcherType}
 	payloadToSend, err := json.Marshal(messageToSend)
 	if err != nil {
-		log.Errorf("Message marshalling error: %v", err)
+		projectLogger.Error(fmt.Sprintf("Message marshalling error: %v", err))
 		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
 	}
 
 	// send serialized message to a broker
 	brokerMessage := broker.Message{Payload: payloadToSend, Route: SentryQueueName}
-	log.Debugf("Send to queue: %s", brokerMessage)
+	projectLogger.Debug(fmt.Sprintf("Send to queue: %s", brokerMessage))
 	handler.Broker.Chan <- brokerMessage
 
 	// increment processed errors counter
