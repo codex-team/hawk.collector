@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 )
 
 // GenerateTestTimeSeriesData - generates test data for minutely, hourly, and daily time series
@@ -15,17 +15,18 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely", true)
 	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly", true)
 	dailyKey := getTimeSeriesKey(projectId, metricType, "daily", true)
+	projectLogger := log.With("projectId", projectId)
 
 	// Delete existing keys to avoid accumulation
-	log.Infof("Deleting existing test data keys for project %s...", projectId)
+	projectLogger.Info(fmt.Sprintf("Deleting existing test data keys for project %s...", projectId))
 	if err := handler.RedisClient.DeleteKey(minutelyKey); err != nil {
-		log.Warnf("Failed to delete minutely key: %v", err)
+		projectLogger.Warn(fmt.Sprintf("Failed to delete minutely key: %v", err))
 	}
 	if err := handler.RedisClient.DeleteKey(hourlyKey); err != nil {
-		log.Warnf("Failed to delete hourly key: %v", err)
+		projectLogger.Warn(fmt.Sprintf("Failed to delete hourly key: %v", err))
 	}
 	if err := handler.RedisClient.DeleteKey(dailyKey); err != nil {
-		log.Warnf("Failed to delete daily key: %v", err)
+		projectLogger.Warn(fmt.Sprintf("Failed to delete daily key: %v", err))
 	}
 
 	labels := map[string]string{
@@ -37,7 +38,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	now := time.Now()
 
 	// Minutely data: last 24 hours (1440 minutes)
-	log.Infof("Generating minutely test data for project %s...", projectId)
+	projectLogger.Info(fmt.Sprintf("Generating minutely test data for project %s...", projectId))
 	minuteStart := now.Add(-24 * time.Hour)
 	for t := minuteStart; t.Before(now); t = t.Add(1 * time.Minute) {
 		// Hash-based pseudo-random: 0-10 events per minute with realistic peaks/valleys
@@ -54,7 +55,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	}
 
 	// Hourly data: last 7 days (168 hours)
-	log.Infof("Generating hourly test data for project %s...", projectId)
+	projectLogger.Info(fmt.Sprintf("Generating hourly test data for project %s...", projectId))
 	hourStart := now.Add(-7 * 24 * time.Hour)
 	for t := hourStart; t.Before(now); t = t.Add(1 * time.Hour) {
 		// Hash-based pseudo-random: 5-95 events per hour
@@ -68,7 +69,7 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 	}
 
 	// Daily data: last 90 days
-	log.Infof("Generating daily test data for project %s...", projectId)
+	projectLogger.Info(fmt.Sprintf("Generating daily test data for project %s...", projectId))
 	dayStart := now.Add(-90 * 24 * time.Hour)
 	for t := dayStart; t.Before(now); t = t.Add(24 * time.Hour) {
 		// Hash-based pseudo-random: 100-1900 events per day
@@ -81,6 +82,6 @@ func (handler *Handler) GenerateTestTimeSeriesData(projectId string) error {
 		}
 	}
 
-	log.Infof("Test data generation completed for project %s", projectId)
+	projectLogger.Info(fmt.Sprintf("Test data generation completed for project %s", projectId))
 	return nil
 }

@@ -17,3 +17,5 @@ venv
 bin/hawk.collector
 bin/golangci-lint
 .env
+
+hawk.collector

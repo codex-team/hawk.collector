@@ -2,7 +2,7 @@ package broker
 
 import (
 	"github.com/codex-team/hawk.collector/cmd"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 )
 
 // Message represents message payload sent to the Queue and AMQP route

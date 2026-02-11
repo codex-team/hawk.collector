@@ -6,7 +6,7 @@ import (
 
 	"github.com/codex-team/hawk.collector/pkg/accounts"
 	"github.com/codex-team/hawk.collector/pkg/hawk"
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"github.com/valyala/fasthttp"
 )
 

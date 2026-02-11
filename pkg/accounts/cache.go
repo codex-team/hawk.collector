@@ -11,7 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/codex-team/hawk.collector/pkg/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
