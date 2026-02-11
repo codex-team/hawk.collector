@@ -149,8 +149,6 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		projectID := project.ProjectID.Hex()
 		var finalLimits rateLimitSettings
 
-		log.Tracef("Project with id %s and limits %+v", projectID, project.RateLimitSettings)
-
 		if workspace, exists := workspaceMap[project.WorkspaceID.Hex()]; exists {
 			finalLimits = workspace.TariffPlan.RateLimitSettings
 
