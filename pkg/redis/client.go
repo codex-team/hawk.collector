@@ -346,15 +346,15 @@ func (r *RedisClient) TSAdd(
 	return res.Err()
 }
 
-// SafeTSAdd ensures that a TS key exists and adds a sample safely
+// SafeTSAdd ensures that a TS key exists and adds a sample safely.
+// timestamp is the bucket start time in milliseconds.
 func (r *RedisClient) SafeTSAdd(
 	key string,
 	value int64,
 	labels map[string]string,
 	retention time.Duration,
+	timestamp int64,
 ) error {
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-
 	err := r.TSAdd(key, value, timestamp, labels)
 	if err != nil && strings.Contains(err.Error(), "TSDB: key does not exist") {
 		log.Warnf("TS key %s does not exist, creating it...", key)
