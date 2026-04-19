@@ -24,8 +24,9 @@ type Handler struct {
 	// Maximum POST body size in bytes for error messages
 	MaxErrorCatcherMessageSize int
 
-	ErrorsBlockedByLimit prometheus.Counter
-	ErrorsProcessed      prometheus.Counter
+	ErrorsBlockedByLimit           prometheus.Counter
+	ErrorsProcessed                prometheus.Counter
+	ErrorsRejectedMessageTooLarge  prometheus.Counter
 
 	RedisClient           *redis.RedisClient
 	AccountsMongoDBClient *accounts.AccountsMongoDBClient

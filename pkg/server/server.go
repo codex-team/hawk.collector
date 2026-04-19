@@ -67,8 +67,9 @@ func (s *Server) Run() {
 	s.ErrorsHandler = errorshandler.Handler{
 		Broker:                     s.Broker,
 		MaxErrorCatcherMessageSize: s.Config.MaxErrorCatcherMessageSize,
-		ErrorsBlockedByLimit:       promauto.NewCounter(prometheus.CounterOpts{Name: "collector_errors_blocked_by_limit_total"}),
-		ErrorsProcessed:            promauto.NewCounter(prometheus.CounterOpts{Name: "collector_errors_processed_ops_total"}),
+		ErrorsBlockedByLimit:          promauto.NewCounter(prometheus.CounterOpts{Name: "collector_errors_blocked_by_limit_total"}),
+		ErrorsProcessed:               promauto.NewCounter(prometheus.CounterOpts{Name: "collector_errors_processed_ops_total"}),
+		ErrorsRejectedMessageTooLarge: promauto.NewCounter(prometheus.CounterOpts{Name: "collector_errors_rejected_message_too_large_total"}),
 		RedisClient:                s.RedisClient,
 		AccountsMongoDBClient:      s.AccountsMongoDBClient,
 		NonDefaultQueues:           errorshandler.GetQueueCache(s.Config.NonDefaultQueues),
