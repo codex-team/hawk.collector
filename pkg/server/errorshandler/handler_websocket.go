@@ -2,6 +2,7 @@ package errorshandler
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/codex-team/hawk.collector/pkg/hawk"
 	"github.com/fasthttp/websocket"
@@ -76,6 +77,9 @@ func (handler *Handler) HandleWebsocket(ctx *fasthttp.RequestCtx) {
 		for {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
+				if errors.Is(err, websocket.ErrReadLimit) {
+					handler.ErrorsRejectedMessageTooLarge.Inc()
+				}
 				collectorWebsocketConnectionErrors.Inc()
 				log.Errorf("Websocket error in ReadMessage: %v", err)
 				break
