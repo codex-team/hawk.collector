@@ -48,14 +48,19 @@ func (r *RedisClient) LoadBlockedIDs() error {
 	be.MaxInterval = 30 * time.Second
 
 	b := backoff.WithContext(be, context.Background())
+	attempt := 0
 	for {
 		d := b.NextBackOff()
 		if d == backoff.Stop {
+			log.Errorf("LoadBlockedIDs gave up after %d attempts (key=%q)", attempt, r.blockedIDsSetName)
 			return fmt.Errorf("failed to connect")
 		}
 		<-time.After(d)
+		attempt++
 		err := r.load()
 		if err != nil {
+			log.Warnf("LoadBlockedIDs attempt %d failed (key=%q, redis_available=%t): %s",
+				attempt, r.blockedIDsSetName, r.CheckAvailability(), err)
 			continue
 		}
 		return nil
@@ -89,13 +94,36 @@ func (r *RedisClient) LoadBlacklist() ([]string, []string, error) {
 func (r *RedisClient) load() error {
 	r.mx.Lock()
 	defer r.mx.Unlock()
+
+	exists, existsErr := r.rdb.Exists(r.ctx, r.blockedIDsSetName).Result()
+	if existsErr != nil {
+		log.Errorf("Failed to check existence of blocked IDs set %q: %s", r.blockedIDsSetName, existsErr)
+	} else if exists == 0 {
+		log.Warnf("Blocked IDs set %q does not exist in Redis", r.blockedIDsSetName)
+	}
+
+	cardinality, cardErr := r.rdb.SCard(r.ctx, r.blockedIDsSetName).Result()
+	if cardErr != nil {
+		log.Errorf("Failed to SCARD blocked IDs set %q: %s", r.blockedIDsSetName, cardErr)
+	}
+
 	keys, _, err := r.rdb.SScan(r.ctx, r.blockedIDsSetName, 0, "", 0).Result()
 	if err != nil {
+		log.Errorf("Failed to SScan blocked IDs set %q: %s", r.blockedIDsSetName, err)
 		return err
 	}
-	if len(keys) != len(r.blockedIDs) {
-		log.Debugf("Banned projects list has been updated. Number of projects changed %d -> %d", len(r.blockedIDs), len(keys))
+
+	prevCount := len(r.blockedIDs)
+	if len(keys) != prevCount {
+		log.Infof("Banned projects list updated %d -> %d (key=%q, scard=%d)", prevCount, len(keys), r.blockedIDsSetName, cardinality)
 	}
+	if cardErr == nil && int64(len(keys)) != cardinality {
+		log.Warnf("SScan returned %d entries but SCARD reports %d for key %q — set may be larger than one SScan batch", len(keys), cardinality, r.blockedIDsSetName)
+	}
+	if len(keys) == 0 && prevCount > 0 {
+		log.Warnf("Blocked projects list is now empty (was %d). Key %q may have been cleared", prevCount, r.blockedIDsSetName)
+	}
+	log.Debugf("Loaded blocked project IDs from %q (count=%d): %v", r.blockedIDsSetName, len(keys), keys)
 	r.blockedIDs = keys
 
 	return nil
@@ -138,9 +166,11 @@ func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
 func (r *RedisClient) IsBlocked(val string) bool {
 	for _, id := range r.blockedIDs {
 		if id == val {
+			log.Debugf("IsBlocked: project %q matched in cache (size=%d)", val, len(r.blockedIDs))
 			return true
 		}
 	}
+	log.Tracef("IsBlocked: project %q not in cache (size=%d, key=%q)", val, len(r.blockedIDs), r.blockedIDsSetName)
 	return false
 }
 
