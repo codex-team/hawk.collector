@@ -115,7 +115,11 @@ func (r *RedisClient) load() error {
 
 	prevCount := len(r.blockedIDs)
 	if len(keys) != prevCount {
-		log.Infof("Banned projects list updated %d -> %d (key=%q, scard=%d)", prevCount, len(keys), r.blockedIDsSetName, cardinality)
+		if cardErr == nil {
+			log.Infof("Banned projects list updated %d -> %d (key=%q, scard=%d)", prevCount, len(keys), r.blockedIDsSetName, cardinality)
+		} else {
+			log.Infof("Banned projects list updated %d -> %d (key=%q, scard_err=%q)", prevCount, len(keys), r.blockedIDsSetName, cardErr)
+		}
 	}
 	if cardErr == nil && int64(len(keys)) != cardinality {
 		log.Warnf("SScan returned %d entries but SCARD reports %d for key %q — set may be larger than one SScan batch", len(keys), cardinality, r.blockedIDsSetName)
@@ -123,9 +127,19 @@ func (r *RedisClient) load() error {
 	if len(keys) == 0 && prevCount > 0 {
 		log.Warnf("Blocked projects list is now empty (was %d). Key %q may have been cleared", prevCount, r.blockedIDsSetName)
 	}
-	log.Debugf("Loaded blocked project IDs from %q (count=%d): %v", r.blockedIDsSetName, len(keys), keys)
-	r.blockedIDs = keys
 
+	const sampleSize = 5
+	if len(keys) == 0 {
+		log.Debugf("Loaded blocked project IDs from %q (count=0)", r.blockedIDsSetName)
+	} else {
+		sample := keys
+		if len(sample) > sampleSize {
+			sample = sample[:sampleSize]
+		}
+		log.Debugf("Loaded blocked project IDs from %q (count=%d, sample=%v)", r.blockedIDsSetName, len(keys), sample)
+	}
+
+	r.blockedIDs = keys
 	return nil
 }
 
