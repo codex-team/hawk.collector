@@ -136,7 +136,7 @@ func TestUpdateRateLimit(t *testing.T) {
 	}
 }
 
-// Regression: load() must return all entries for sets larger than one SScan batch.
+// Regression: load() must return all entries from large blocked ID sets.
 func TestLoadBlockedIDsLargeSet(t *testing.T) {
 	client, mr := setupTestRedis(t)
 	defer mr.Close()
