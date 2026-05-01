@@ -92,9 +92,6 @@ func (r *RedisClient) LoadBlacklist() ([]string, []string, error) {
 
 // loads list with provided name from Redis.
 func (r *RedisClient) load() error {
-	r.mx.Lock()
-	defer r.mx.Unlock()
-
 	exists, existsErr := r.rdb.Exists(r.ctx, r.blockedIDsSetName).Result()
 	if existsErr != nil {
 		log.Errorf("Failed to check existence of blocked IDs set %q: %s", r.blockedIDsSetName, existsErr)
@@ -113,7 +110,11 @@ func (r *RedisClient) load() error {
 		return err
 	}
 
+	r.mx.Lock()
 	prevCount := len(r.blockedIDs)
+	r.blockedIDs = keys
+	r.mx.Unlock()
+
 	if len(keys) != prevCount {
 		if cardErr == nil {
 			log.Infof("Banned projects list updated %d -> %d (key=%q, scard=%d)", prevCount, len(keys), r.blockedIDsSetName, cardinality)
@@ -139,15 +140,11 @@ func (r *RedisClient) load() error {
 		log.Debugf("Loaded blocked project IDs from %q (count=%d, sample=%v)", r.blockedIDsSetName, len(keys), sample)
 	}
 
-	r.blockedIDs = keys
 	return nil
 }
 
 // updateBlacklist loads IPs blacklist and resets current period map.
 func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
-	r.mx.Lock()
-	defer r.mx.Unlock()
-
 	ipAddrs, err := r.rdb.HKeys(r.ctx, r.currentPeriodMapName).Result()
 	if err != nil {
 		return nil, nil, err
@@ -157,7 +154,10 @@ func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	r.mx.Lock()
 	r.blacklistIPs = ips
+	r.mx.Unlock()
 
 	if len(ipAddrs) > 0 {
 		requests, err := r.rdb.HVals(r.ctx, r.currentPeriodMapName).Result()
