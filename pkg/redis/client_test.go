@@ -136,6 +136,30 @@ func TestUpdateRateLimit(t *testing.T) {
 	}
 }
 
+// Regression: load() must return all entries from large blocked ID sets.
+func TestLoadBlockedIDsLargeSet(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	defer mr.Close()
+
+	client.blockedIDsSetName = "DisabledProjectsSet"
+
+	const total = 100
+	expected := make([]string, 0, total)
+	for i := 0; i < total; i++ {
+		id := fmt.Sprintf("%024x", i)
+		client.rdb.SAdd(client.ctx, client.blockedIDsSetName, id)
+		expected = append(expected, id)
+	}
+
+	err := client.load()
+	assert.NoError(t, err)
+
+	for _, id := range expected {
+		assert.True(t, client.IsBlocked(id), "expected %q to be reported as blocked", id)
+	}
+	assert.False(t, client.IsBlocked("not-in-set"))
+}
+
 func TestUpdateRateLimitConcurrent(t *testing.T) {
 	client, mr := setupTestRedis(t)
 	defer mr.Close()
