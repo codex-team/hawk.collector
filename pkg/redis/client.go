@@ -13,7 +13,7 @@ import (
 )
 
 type RedisClient struct {
-	mx                   sync.Mutex
+	mx                   sync.RWMutex
 	rdb                  *redis.Client
 	blockedIDsSetName    string
 	allIPsMapName        string
@@ -107,9 +107,9 @@ func (r *RedisClient) load() error {
 		log.Errorf("Failed to SCARD blocked IDs set %q: %s", r.blockedIDsSetName, cardErr)
 	}
 
-	keys, _, err := r.rdb.SScan(r.ctx, r.blockedIDsSetName, 0, "", 0).Result()
+	keys, err := r.rdb.SMembers(r.ctx, r.blockedIDsSetName).Result()
 	if err != nil {
-		log.Errorf("Failed to SScan blocked IDs set %q: %s", r.blockedIDsSetName, err)
+		log.Errorf("Failed to SMembers blocked IDs set %q: %s", r.blockedIDsSetName, err)
 		return err
 	}
 
@@ -122,7 +122,7 @@ func (r *RedisClient) load() error {
 		}
 	}
 	if cardErr == nil && int64(len(keys)) != cardinality {
-		log.Warnf("SScan returned %d entries but SCARD reports %d for key %q — set may be larger than one SScan batch", len(keys), cardinality, r.blockedIDsSetName)
+		log.Warnf("SMembers returned %d entries but SCARD reports %d for key %q (concurrent modification?)", len(keys), cardinality, r.blockedIDsSetName)
 	}
 	if len(keys) == 0 && prevCount > 0 {
 		log.Warnf("Blocked projects list is now empty (was %d). Key %q may have been cleared", prevCount, r.blockedIDsSetName)
@@ -178,6 +178,8 @@ func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
 
 // IsBlocked checks if the provided ID is blocked.
 func (r *RedisClient) IsBlocked(val string) bool {
+	r.mx.RLock()
+	defer r.mx.RUnlock()
 	for _, id := range r.blockedIDs {
 		if id == val {
 			log.Debugf("IsBlocked: project %q matched in cache (size=%d)", val, len(r.blockedIDs))
@@ -200,6 +202,8 @@ func (r *RedisClient) IncrementIP(ip string) error {
 
 // CheckBlacklist checks if the provided IP is in blacklist.
 func (r *RedisClient) CheckBlacklist(ip string) bool {
+	r.mx.RLock()
+	defer r.mx.RUnlock()
 	if len(r.blacklistIPs) == 0 {
 		return false
 	}
