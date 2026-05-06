@@ -150,7 +150,7 @@ func (r *RedisClient) updateBlacklist() ([]string, []string, error) {
 		return nil, nil, err
 	}
 
-	ips, _, err := r.rdb.SScan(r.ctx, r.blacklistSetName, 0, "", 0).Result()
+	ips, err := r.rdb.SMembers(r.ctx, r.blacklistSetName).Result()
 	if err != nil {
 		return nil, nil, err
 	}
