@@ -144,7 +144,7 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		workspace accountWorkspace
 		plan      tariffPlan
 	}
-	workspaceMap := make(map[string]workspaceWithPlan)
+	workspaceMap := make(map[string]workspaceWithPlan, len(workspaces))
 	for _, workspace := range workspaces {
 		plan, ok := plansMap[workspace.TariffPlanID]
 		if !ok {
