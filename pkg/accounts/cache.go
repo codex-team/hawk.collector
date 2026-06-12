@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const projectsCollectionName = "projects"
@@ -44,7 +43,7 @@ type tariffPlan struct {
 
 type accountWorkspace struct {
 	WorkspaceID       primitive.ObjectID `bson:"_id"`
-	TariffPlan        tariffPlan         `bson:"plan"`
+	TariffPlanID      primitive.ObjectID `bson:"tariffPlanId"`
 	RateLimitSettings rateLimitSettings  `bson:"rateLimitSettings"`
 }
 
@@ -93,31 +92,35 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	// Get workspaces with their plans using aggregation pipeline
-	workspacesCollection := client.mdb.Database(client.database).Collection(workspacesCollectionName)
-	pipeline := mongo.Pipeline{
-		{
-			{Key: "$lookup", Value: bson.D{
-				{Key: "from", Value: plansCollectionName},
-				{Key: "localField", Value: "tariffPlanId"},
-				{Key: "foreignField", Value: "_id"},
-				{Key: "as", Value: "plan"},
-			}},
-		},
-		{
-			{Key: "$unwind", Value: "$plan"},
-		},
+	// Join plans in memory: $lookup would read plans once per workspace doc
+	plansCollection := client.mdb.Database(client.database).Collection(plansCollectionName)
+	plansCursor, err := plansCollection.Find(ctx, bson.D{})
+	if err != nil {
+		log.Errorf("Cannot create cursor in %s collection for cache update: %s", plansCollectionName, err)
+		return err
 	}
 
-	workspacesCursor, err := workspacesCollection.Aggregate(ctx, pipeline)
+	var plans []tariffPlan
+	if err = plansCursor.All(ctx, &plans); err != nil {
+		log.Errorf("Cannot decode data in %s collection for cache update: %s", plansCollectionName, err)
+		return err
+	}
+
+	plansMap := make(map[primitive.ObjectID]tariffPlan, len(plans))
+	for _, plan := range plans {
+		plansMap[plan.PlanID] = plan
+	}
+
+	workspacesCollection := client.mdb.Database(client.database).Collection(workspacesCollectionName)
+	workspacesCursor, err := workspacesCollection.Find(ctx, bson.D{})
 	if err != nil {
-		log.Errorf("Cannot execute aggregation for workspaces and plans: %s", err)
+		log.Errorf("Cannot create cursor in %s collection for cache update: %s", workspacesCollectionName, err)
 		return err
 	}
 
 	var workspaces []accountWorkspace
 	if err = workspacesCursor.All(ctx, &workspaces); err != nil {
-		log.Errorf("Cannot decode aggregation results: %s", err)
+		log.Errorf("Cannot decode data in %s collection for cache update: %s", workspacesCollectionName, err)
 		return err
 	}
 
@@ -136,9 +139,18 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 	}
 
 	// Create workspace lookup map for quick access
-	workspaceMap := make(map[string]accountWorkspace)
+	// Workspaces without a matching plan are skipped, as $unwind did before
+	type workspaceWithPlan struct {
+		workspace accountWorkspace
+		plan      tariffPlan
+	}
+	workspaceMap := make(map[string]workspaceWithPlan, len(workspaces))
 	for _, workspace := range workspaces {
-		workspaceMap[workspace.WorkspaceID.Hex()] = workspace
+		plan, ok := plansMap[workspace.TariffPlanID]
+		if !ok {
+			continue
+		}
+		workspaceMap[workspace.WorkspaceID.Hex()] = workspaceWithPlan{workspace: workspace, plan: plan}
 	}
 
 	// Create a temporary map instead of directly modifying client.projectLimits
@@ -151,14 +163,14 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 
 		log.Tracef("Project with id %s and limits %+v", projectID, project.RateLimitSettings)
 
-		if workspace, exists := workspaceMap[project.WorkspaceID.Hex()]; exists {
-			finalLimits = workspace.TariffPlan.RateLimitSettings
+		if entry, exists := workspaceMap[project.WorkspaceID.Hex()]; exists {
+			finalLimits = entry.plan.RateLimitSettings
 
-			if workspace.RateLimitSettings.EventsLimit > 0 {
-				finalLimits.EventsLimit = workspace.RateLimitSettings.EventsLimit
+			if entry.workspace.RateLimitSettings.EventsLimit > 0 {
+				finalLimits.EventsLimit = entry.workspace.RateLimitSettings.EventsLimit
 			}
-			if workspace.RateLimitSettings.EventsPeriod > 0 {
-				finalLimits.EventsPeriod = workspace.RateLimitSettings.EventsPeriod
+			if entry.workspace.RateLimitSettings.EventsPeriod > 0 {
+				finalLimits.EventsPeriod = entry.workspace.RateLimitSettings.EventsPeriod
 			}
 		}
 
