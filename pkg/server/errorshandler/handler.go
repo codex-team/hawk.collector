@@ -65,27 +65,9 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, integrationSecret)
 
-	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
-	if !ok {
-		log.Warnf("Project %s is not in the projects limits cache", projectId)
-	} else {
-		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
-	}
-
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
-		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
-	}
-
-	rateWithinLimit, err := handler.RedisClient.UpdateRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
-	if err != nil {
-		log.Errorf("Failed to update rate limit: %s", err)
-		return ResponseMessage{402, true, "Failed to update rate limit"}
-	}
-	if !rateWithinLimit {
-		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
-		return ResponseMessage{402, true, "Rate limit exceeded"}
 	}
 
 	// Validate if message is a valid JSON
@@ -109,9 +91,6 @@ func (handler *Handler) process(body []byte) ResponseMessage {
 
 	// increment processed errors counter
 	handler.ErrorsProcessed.Inc()
-
-	// record project metrics
-	handler.recordProjectMetrics(projectId, "events-accepted", true)
 
 	return ResponseMessage{200, false, "OK"}
 }
@@ -143,51 +122,4 @@ func getTimeSeriesKey(projectId, metricType, granularity string, isSystemMetric 
 
 	// ts:project-%s:%s:%s is used in api for chart retrieving
 	return fmt.Sprintf("ts:project-%s:%s:%s", metricType, projectId, granularity)
-}
-
-// bucketTimestampMs returns the current UTC time truncated to the start of the
-// given granularity bucket, in milliseconds. Truncating ensures that all events
-// within the same bucket share one timestamp so ON_DUPLICATE SUM accumulates
-// them into a single sample instead of creating a separate sample per event.
-func bucketTimestampMs(granularity string) int64 {
-	now := time.Now().UTC()
-	var t time.Time
-	switch granularity {
-	case "hourly":
-		t = now.Truncate(time.Hour)
-	case "daily":
-		t = now.Truncate(24 * time.Hour)
-	default: // minutely
-		t = now.Truncate(time.Minute)
-	}
-	return t.UnixNano() / int64(time.Millisecond)
-}
-
-// recordProjectMetrics records project metrics to Redis TimeSeries
-// metricType can be: "events-accepted", "events-rate-limited", etc.
-func (handler *Handler) recordProjectMetrics(projectId, metricType string, isSystemMetric bool) {
-	minutelyKey := getTimeSeriesKey(projectId, metricType, "minutely", isSystemMetric)
-	hourlyKey := getTimeSeriesKey(projectId, metricType, "hourly", isSystemMetric)
-	dailyKey := getTimeSeriesKey(projectId, metricType, "daily", isSystemMetric)
-
-	labels := map[string]string{
-		"type":    "error",
-		"status":  metricType,
-		"project": projectId,
-	}
-
-	// minutely: store for 24 hours
-	if err := handler.RedisClient.SafeTSAdd(minutelyKey, 1, labels, 24*time.Hour, bucketTimestampMs("minutely")); err != nil {
-		log.Errorf("failed to add minutely TS for %s: %v", metricType, err)
-	}
-
-	// hourly: store for 7 days
-	if err := handler.RedisClient.SafeTSAdd(hourlyKey, 1, labels, 7*24*time.Hour, bucketTimestampMs("hourly")); err != nil {
-		log.Errorf("failed to add hourly TS for %s: %v", metricType, err)
-	}
-
-	// daily: store for 90 days
-	if err := handler.RedisClient.SafeTSAdd(dailyKey, 1, labels, 90*24*time.Hour, bucketTimestampMs("daily")); err != nil {
-		log.Errorf("failed to add daily TS for %s: %v", metricType, err)
-	}
 }

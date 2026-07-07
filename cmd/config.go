@@ -46,7 +46,6 @@ type Config struct {
 	// MongoDB connection URI to the accounts database
 	AccountsMongoDBURI         string        `env:"ACCOUNTS_MONGODB_URI"`
 	TokenUpdatePeriod          time.Duration `env:"TOKEN_UPDATE_PERIOD" defaultEnv:"1m"`
-	ProjectsLimitsUpdatePeriod time.Duration `env:"PROJECTS_LIMITS_UPDATE_PERIOD" defaultEnv:"1m"`
 	RedisDisabledProjectsSet   string        `env:"REDIS_DISABLED_PROJECT_SET"`
 	RedisBlacklistIPsSet       string        `env:"REDIS_BLACKLIST_IP_SET"`
 	RedisAllIPsMap             string        `env:"REDIS_ALL_IPS_MAP"`

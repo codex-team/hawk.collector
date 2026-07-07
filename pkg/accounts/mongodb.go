@@ -18,11 +18,10 @@ const connectionTimeout = 10 * time.Second
 const pingTimeout = 2 * time.Second
 
 type AccountsMongoDBClient struct {
-	mdb           *mongo.Client
-	ctx           context.Context
-	database      string
-	validTokens   map[string]string
-	projectLimits map[string]rateLimitSettings
+	mdb         *mongo.Client
+	ctx         context.Context
+	database    string
+	validTokens map[string]string
 }
 
 func New(connectionURI string) *AccountsMongoDBClient {
@@ -65,10 +64,4 @@ func (m *AccountsMongoDBClient) CheckAvailability() bool {
 func (client *AccountsMongoDBClient) GetValidToken(token string) (string, bool) {
 	projectID, ok := client.validTokens[token]
 	return projectID, ok
-}
-
-// GetProjectLimits returns the rate limit settings for a project
-func (client *AccountsMongoDBClient) GetProjectLimits(projectID string) (rateLimitSettings, bool) {
-	limits, ok := client.projectLimits[projectID]
-	return limits, ok
 }

@@ -40,13 +40,6 @@ func (handler *Handler) process(form *multipart.Form, token string) ResponseMess
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, token)
 
-	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
-	if !ok {
-		log.Warnf("Project %s is not in the projects limits cache", projectId)
-	} else {
-		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
-	}
-
 	if handler.RedisClient.IsBlocked(projectId) {
 		return ResponseMessage{402, true, "Project has exceeded the events limit"}
 	}
