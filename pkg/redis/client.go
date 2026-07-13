@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 )
 
