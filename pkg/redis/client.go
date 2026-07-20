@@ -224,6 +224,63 @@ func (r *RedisClient) CheckAvailability() bool {
 	return pong == "PONG"
 }
 
+// CheckRateLimit reads the per-project rate limit counter without incrementing.
+// Grouper owns increments; collector only rejects early when already at/over limit.
+// Expired or malformed windows are cleared to "{now}:0".
+func (r *RedisClient) CheckRateLimit(projectID string, eventsLimit int64, eventsPeriod int64) (bool, error) {
+	if eventsLimit == 0 {
+		return true, nil
+	}
+
+	// Read-only check (no increment). Clear expired/malformed windows to now:0.
+	script := `
+		local key = KEYS[1]
+		local field = ARGV[1]
+		local now = tonumber(ARGV[2])
+		local limit = tonumber(ARGV[3])
+		local period = tonumber(ARGV[4])
+
+		local current = redis.call('HGET', key, field)
+		if not current then
+			return 1
+		end
+
+		local timestamp, count = string.match(current, '^(%d+):(%d+)$')
+		if not timestamp then
+			redis.call('HSET', key, field, now .. ':0')
+			return 1
+		end
+		timestamp = tonumber(timestamp)
+		count = tonumber(count)
+
+		if now - timestamp >= period then
+			redis.call('HSET', key, field, now .. ':0')
+			return 1
+		end
+
+		if count >= limit then
+			return 0
+		end
+
+		return 1
+	`
+
+	result, err := r.rdb.Eval(
+		r.ctx,
+		script,
+		[]string{"rate_limits"},
+		projectID,
+		time.Now().Unix(),
+		eventsLimit,
+		eventsPeriod,
+	).Result()
+	if err != nil {
+		return false, fmt.Errorf("failed to execute rate limit check script: %w", err)
+	}
+
+	return result.(int64) == 1, nil
+}
+
 // TSCreateIfNotExists creates a RedisTimeSeries key if it doesn't exist.
 // It sets optional retention policy and attaches labels.
 func (r *RedisClient) TSCreateIfNotExists(

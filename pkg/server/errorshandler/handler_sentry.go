@@ -94,9 +94,28 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, hawkToken)
 
+	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
+	if !ok {
+		log.Warnf("Project %s is not in the projects limits cache", projectId)
+	} else {
+		log.Debugf("Project %s limits: %+v", projectId, projectLimits)
+	}
+
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Project has exceeded the events limit"})
+		return
+	}
+
+	rateWithinLimit, err := handler.RedisClient.CheckRateLimit(projectId, projectLimits.EventsLimit, projectLimits.EventsPeriod)
+	if err != nil {
+		log.Errorf("Failed to check rate limit: %s", err)
+		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Failed to check rate limit"})
+		return
+	}
+	if !rateWithinLimit {
+		handler.ErrorsBlockedByLimit.Inc()
+		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Rate limit exceeded"})
 		return
 	}
 
