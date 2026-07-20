@@ -164,12 +164,76 @@ Basic configuration is taken from `.env` file.
 | BLACKLIST_THRESHOLD | 10000 | Amount of requests, which, when achieved, forces IP to get blocked |
 | NOTIFY_URL | https://notify.bot.ifmo.su/u/ABCD1234 | Address to send alerts in case of too many requests |
 | TOKEN_UPDATE_PERIOD | 10s | Time interval to update token cache |
+| PROJECTS_LIMITS_UPDATE_PERIOD | 3600 | Time interval to update projects limits cache (in seconds) |
 
 # Rate Limiting
 
-Per-project rate limiting is enforced in the **grouper worker** (not in collector). Collector still rejects requests from workspace-blocked projects via `DisabledProjectsSet`.
+Rate limiting is implemented using Redis to track and enforce request limits per project. The system supports configurable limits at the project, workspace and plan level.
 
-See `workers/workers/grouper/README.md` and `workers/workers/grouper/.env.sample` for configuration (`PROJECTS_LIMITS_UPDATE_PERIOD`, `REDIS_RATE_LIMITS_KEY`).
+Collector performs a **read-only** check against the shared Redis counters and rejects requests early when a project is already at or over its limit. Counter increments are owned by the grouper worker. When collector rejects a rate-limited request, it also records the `events-rate-limited` project metric in Redis TimeSeries.
+
+Collector also rejects requests from workspace-blocked projects via `DisabledProjectsSet`.
+
+## Configuration
+
+Rate limits can be configured at multiple levels and applied in the following order (highest to lowest):
+
+1. Project level - Individual project-specific limits
+2. Workspace level - Limits that apply to all projects in a workspace
+3. Plan level - Default limits from the workspace's tariff plan
+
+## Implementation
+
+Rate limits are tracked in the `rate_limits` Redis hash with the following pattern:
+
+```go
+// Key: "project_id" -> value: "timestamp:count"
+// example: "6762b5db032b200023854b2c" -> "1737483572:5"
+```
+
+Each project's rate limit data contains:
+- Timestamp of the current window
+- Request count in the current window
+
+### Rate Limit Parameters
+
+Two main parameters control the rate limiting:
+
+- `EventsLimit` - Maximum number of events allowed in the period
+- `EventsPeriod` - Time window in seconds for the limit (in seconds)
+
+## Configuration
+
+Rate limits are fetched from MongoDB. You can find them in the `rateLimitSettings` field of the `plans,workspaces,projects` collections.
+
+`rateLimitSettings` is object with two fields:
+- `N` - Maximum number of events allowed in the period (`int64`)
+- `T` - Time window in seconds for the limit (in seconds) (`int64`)
+
+```json
+{
+  "rateLimitSettings": {
+    "N": {
+      "$numberLong": "15"
+    },
+    "T": {
+      "$numberLong": "100"
+    }
+  }
+}
+```
+
+Rate limits are automatically enforced for all incoming error events. No additional configuration is needed at the client level.
+
+When a rate limit is exceeded, clients will receive a response like:
+
+```json
+{
+  "code": 402,
+  "error": true,
+  "message": "Rate limit exceeded"
+}
+```
 
 # License
 

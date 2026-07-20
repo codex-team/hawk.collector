@@ -124,6 +124,7 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		return err
 	}
 
+	// Get all projects
 	projectsCollection := client.mdb.Database(client.database).Collection(projectsCollectionName)
 	cursor, err := projectsCollection.Find(ctx, bson.D{})
 	if err != nil {
@@ -137,6 +138,7 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		return err
 	}
 
+	// Create workspace lookup map for quick access
 	// Workspaces without a matching plan are skipped, as $unwind did before
 	type workspaceWithPlan struct {
 		workspace accountWorkspace
@@ -151,8 +153,10 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 		workspaceMap[workspace.WorkspaceID.Hex()] = workspaceWithPlan{workspace: workspace, plan: plan}
 	}
 
+	// Create a temporary map instead of directly modifying client.projectLimits
 	projectLimitsTmp := make(map[string]rateLimitSettings)
 
+	// Process each project applying the priority rules
 	for _, project := range projects {
 		projectID := project.ProjectID.Hex()
 		var finalLimits rateLimitSettings
@@ -177,9 +181,11 @@ func (client *AccountsMongoDBClient) UpdateProjectsLimitsCache() error {
 			finalLimits.EventsPeriod = project.RateLimitSettings.EventsPeriod
 		}
 
+		// Add to temporary map instead of client.projectLimits
 		projectLimitsTmp[projectID] = finalLimits
 	}
 
+	// Atomically replace the map reference
 	client.projectLimits = projectLimitsTmp
 
 	log.Tracef("Current projects limits cache state: %+v", client.projectLimits)

@@ -268,16 +268,17 @@ func (r *RedisClient) CheckRateLimit(projectID string, eventsLimit int64, events
 	result, err := r.rdb.Eval(
 		r.ctx,
 		script,
-		[]string{"rate_limits"},
-		projectID,
-		time.Now().Unix(),
-		eventsLimit,
-		eventsPeriod,
+		[]string{"rate_limits"}, // KEYS
+		projectID,               // field (ARGV[1])
+		time.Now().Unix(),       // now (ARGV[2])
+		eventsLimit,             // limit (ARGV[3])
+		eventsPeriod,            // period (ARGV[4])
 	).Result()
 	if err != nil {
 		return false, fmt.Errorf("failed to execute rate limit check script: %w", err)
 	}
 
+	// Script returns 1 if rate limit is not exceeded, 0 if it is
 	return result.(int64) == 1, nil
 }
 

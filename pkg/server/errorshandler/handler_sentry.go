@@ -103,6 +103,7 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 
 	if handler.RedisClient.IsBlocked(projectId) {
 		handler.ErrorsBlockedByLimit.Inc()
+		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Project has exceeded the events limit"})
 		return
 	}
@@ -113,8 +114,9 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Failed to check rate limit"})
 		return
 	}
+
 	if !rateWithinLimit {
-		handler.ErrorsBlockedByLimit.Inc()
+		handler.recordProjectMetrics(projectId, "events-rate-limited", false)
 		sendAnswerHTTP(ctx, ResponseMessage{402, true, "Rate limit exceeded"})
 		return
 	}
