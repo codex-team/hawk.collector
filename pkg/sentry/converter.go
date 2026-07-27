@@ -280,6 +280,11 @@ func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, p
 		return nil, fmt.Errorf("Item payload is missing")
 	}
 
+	// Validate the payload, it should be Valid JSON
+	if !gjson.ValidBytes(item.Payload) {
+		return nil, fmt.Errorf("Invalid event payload JSON")
+	}
+
 	headers := gjson.ParseBytes(envelopeHeaders)
 	eventPayload := gjson.ParseBytes(item.Payload)
 

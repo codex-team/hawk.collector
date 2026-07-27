@@ -39,12 +39,12 @@ func FilterOutBinaryItems(rawEvent string) string {
 
 		var parsed map[string]interface{}
 		if err := json.Unmarshal([]byte(line), &parsed); err != nil {
-			// If line doesn't parse as JSON, it might be binary data
-			// If we're in a replay block, skip it (it's part of replay recording)
+			// If line doesn't parse as JSON, it is likely an item payload (e.g., attachment/binary).
+ 			// Keep it unless we're inside a replay block (replay recordings can include raw binary/newlines).
 			if isInReplayBlock {
 				continue
 			}
-			// If not in replay block and not JSON, it might be corrupted data - skip it
+			filteredLines = append(filteredLines, line)
 			continue
 		}
 

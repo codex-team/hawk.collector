@@ -62,7 +62,7 @@ func handleEnvelopeItem(envelopeHeaders json.RawMessage, item EnvelopeItem, proj
 		if itemType == "client_report" {
 			logClientReport(envelopeHeaders, item)
 		}
-		log.Infof("Skipping non-event item of type: %s", itemType)
+		log.Debugf("Skipping non-event item of type: %s", itemType)
 		return ProcessResultSkipped, nil, nil
 	}
 
@@ -86,8 +86,8 @@ func logClientReport(envelopeHeaders json.RawMessage, item EnvelopeItem) {
 		decoded = string(item.Payload)
 	}
 
-	log.Info("Received client_report item; logging internals:")
-	log.Infof("envelopeHeaders=%s itemHeader=%v payload=%v", string(envelopeHeaders), item.Header, decoded)
+	log.Debugf("Received client_report item; logging internals:")
+	log.Debugf("envelopeHeaders=%s itemHeader=%v payload=%v", string(envelopeHeaders), item.Header, decoded)
 
 	// Also surface structured fields when present (helps debugging)
 	if gjson.GetBytes(item.Payload, "discarded_events").Exists() {
