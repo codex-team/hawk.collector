@@ -276,7 +276,7 @@ func IsJsSDK(eventPayload gjson.Result) bool {
 
 // TransformToHawkFormat converts a Sentry event item into a Hawk broker message.
 func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, projectID string) (*HawkBrokerPayload, error) {
-	if item.Payload == nil || len(item.Payload) == 0 || string(item.Payload) == "null" {
+	if len(item.Payload) == 0 || string(item.Payload) == "null" {
 		return nil, fmt.Errorf("Item payload is missing")
 	}
 

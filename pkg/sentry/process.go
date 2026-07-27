@@ -53,7 +53,7 @@ func ProcessEnvelope(raw []byte, projectID string) ([]*HawkBrokerPayload, error)
 
 func handleEnvelopeItem(envelopeHeaders json.RawMessage, item EnvelopeItem, projectID string) (ProcessResult, *HawkBrokerPayload, error) {
 	// Same as Node: missing / null payload is an error for any item type
-	if item.Payload == nil || len(item.Payload) == 0 || string(item.Payload) == "null" {
+	if len(item.Payload) == 0 || string(item.Payload) == "null" {
 		return "", nil, fmt.Errorf("Item payload is missing")
 	}
 
