@@ -2,6 +2,7 @@ package sentry
 
 import (
 	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestProcessEnvelope_MultipleEvents(t *testing.T) {
 	require.Len(t, messages, 2)
 	assert.Equal(t, "error", messages[0].Payload.Type)
 	assert.Equal(t, "warning", messages[1].Payload.Type)
-	assert.Equal(t, CatcherTypeDefault, messages[0].CatcherType)
+	assert.Equal(t, WorkerTypeDefault, messages[0].CatcherType)
 }
 
 func TestProcessEnvelope_EmptyItems(t *testing.T) {
@@ -90,7 +91,7 @@ func TestProcessEnvelope_RoutesJsSDK(t *testing.T) {
 	messages, err := ProcessEnvelope([]byte(envelope), "123")
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	assert.Equal(t, CatcherTypeJavaScript, messages[0].CatcherType)
+	assert.Equal(t, WorkerTypeJavaScript, messages[0].CatcherType)
 	assert.Equal(t, "1.0.0", messages[0].Payload.Release)
 }
 
@@ -103,7 +104,7 @@ func TestProcessEnvelope_RoutesNonJsSDK(t *testing.T) {
 	messages, err := ProcessEnvelope([]byte(envelope), "123")
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	assert.Equal(t, CatcherTypeDefault, messages[0].CatcherType)
+	assert.Equal(t, WorkerTypeDefault, messages[0].CatcherType)
 }
 
 func TestProcessEnvelope_ReleasePreference(t *testing.T) {
@@ -156,7 +157,7 @@ func TestProcessEnvelope_MixedEventAndReplay(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
 	// SDK is only on envelope header; Node routes by item payload.sdk → default
-	assert.Equal(t, CatcherTypeDefault, messages[0].CatcherType)
+	assert.Equal(t, WorkerTypeDefault, messages[0].CatcherType)
 	require.NotNil(t, messages[0].Payload.Addons)
 	sentryAddons := messages[0].Payload.Addons["sentry"].(map[string]interface{})
 	assert.Equal(t, "Test event", sentryAddons["message"])
@@ -174,7 +175,7 @@ func TestProcessEnvelope_RealPythonError(t *testing.T) {
 
 	msg := messages[0]
 	assert.Equal(t, int64(1734530412), msg.Timestamp)
-	assert.Equal(t, CatcherTypeDefault, msg.CatcherType)
+	assert.Equal(t, WorkerTypeDefault, msg.CatcherType)
 	assert.Equal(t, "ZeroDivisionError: division by zero", msg.Payload.Title)
 	assert.Equal(t, "error", msg.Payload.Type)
 	assert.Equal(t, "35c42f2ddf524bbdafe22439b981ddfd0fb3b5ad", msg.Payload.Release)
@@ -195,6 +196,35 @@ func TestProcessEnvelope_CyrillicTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
 	assert.Equal(t, "Exception: Тестовая ошибка #287", messages[0].Payload.Title)
+}
+
+func TestProcessEnvelope_JSONPayloadWithoutLength(t *testing.T) {
+	envelope := joinLines(
+		`{"event_id":"123e4567-e89b-12d3-a456-426614174000","sent_at":"2024-01-01T00:00:00.000Z"}`,
+		`{"type":"event","content_type":"application/json"}`,
+		`{"message":"plain json payload","level":"error"}`,
+	)
+	messages, err := ProcessEnvelope([]byte(envelope), "123")
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "plain json payload", messages[0].Payload.Title)
+	assert.Equal(t, "error", messages[0].Payload.Type)
+}
+
+func TestProcessEnvelope_LengthPrefixedPayload(t *testing.T) {
+	// Pretty-printed JSON contains real newlines; only length-aware parsing reads it correctly.
+	payload := "{\n  \"message\": \"pretty json payload\",\n  \"level\": \"error\"\n}"
+	header := fmt.Sprintf(`{"type":"event","content_type":"application/json","length":%d}`, len(payload))
+	envelope := joinLines(
+		`{"event_id":"123e4567-e89b-12d3-a456-426614174000","sent_at":"2024-01-01T00:00:00.000Z"}`,
+		header,
+	) + "\n" + payload + "\n"
+
+	messages, err := ProcessEnvelope([]byte(envelope), "123")
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "pretty json payload", messages[0].Payload.Title)
+	assert.Equal(t, "error", messages[0].Payload.Type)
 }
 
 func joinLines(lines ...string) string {

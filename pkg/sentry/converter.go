@@ -13,10 +13,10 @@ import (
 // CatcherVersion matches hawk-worker-sentry package.json version (parity).
 const CatcherVersion = "1.0.1"
 
-// Queue / catcher type constants matching Node worker routing.
+// Worker / queue names used to route transformed events.
 const (
-	CatcherTypeJavaScript = "errors/javascript"
-	CatcherTypeDefault    = "errors/default"
+	WorkerTypeJavaScript = "errors/javascript"
+	WorkerTypeDefault    = "errors/default"
 )
 
 // sentryJsSDK list from Node worker (including capacirtor typo — do not "fix").
@@ -121,6 +121,13 @@ func ComposeBacktrace(eventPayload gjson.Result) []BacktraceFrame {
 		reversed[len(rawFrames)-1-i] = frame
 	}
 
+	// Cap frames to limit memory: some SDKs send 250+ frames (several MB).
+	// After reverse, index 0 is the newest (crash) frame.
+	const maxBacktraceFrames = 20
+	if len(reversed) > maxBacktraceFrames {
+		reversed = reversed[:maxBacktraceFrames]
+	}
+
 	backtrace := make([]BacktraceFrame, 0, len(reversed))
 	for _, frame := range reversed {
 		file := firstNonEmpty(
@@ -148,9 +155,10 @@ func ComposeBacktrace(eventPayload gjson.Result) []BacktraceFrame {
 
 			if hasPreContext {
 				pre := frame.Get("pre_context").Array()
+				preLen := len(pre)
 				for index, lineContent := range pre {
 					sourceCode = append(sourceCode, SourceCodeLine{
-						Line:    lineNo + index - len(pre),
+						Line:    lineNo + index - preLen,
 						Content: lineContent.String(),
 					})
 				}
@@ -275,6 +283,8 @@ func IsJsSDK(eventPayload gjson.Result) bool {
 }
 
 // TransformToHawkFormat converts a Sentry event item into a Hawk broker message.
+// Item payloads may arrive as newline-delimited JSON or as length-prefixed bytes
+// (when the item header includes "length"); both are raw JSON bytes by this point.
 func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, projectID string) (*HawkBrokerPayload, error) {
 	if len(item.Payload) == 0 || string(item.Payload) == "null" {
 		return nil, fmt.Errorf("Item payload is missing")
@@ -295,9 +305,9 @@ func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, p
 	}
 
 	isJs := IsJsSDK(eventPayload)
-	catcherType := CatcherTypeDefault
+	workerType := WorkerTypeDefault
 	if isJs {
-		catcherType = CatcherTypeJavaScript
+		workerType = WorkerTypeJavaScript
 	}
 
 	title := ComposeTitle(eventPayload)
@@ -337,7 +347,7 @@ func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, p
 
 	return &HawkBrokerPayload{
 		ProjectID:   projectID,
-		CatcherType: catcherType,
+		CatcherType: workerType,
 		Timestamp:   sentAtUnix,
 		Payload:     event,
 	}, nil
@@ -366,7 +376,9 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-// flattenObject ports Node flattenObject — preserves key order via gjson.ForEach.
+// flattenObject turns nested JSON (objects/arrays/primitives) into flat "key=value"
+// strings used as Hawk backtrace frame arguments. Nested keys are joined with dots
+// (e.g. {"a":{"b":1}} → "a.b=1"). Key order follows the original JSON object order.
 func flattenObject(obj gjson.Result, prefix string) []string {
 	if obj.Type == gjson.Null {
 		if prefix != "" {
