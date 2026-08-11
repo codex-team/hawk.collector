@@ -3,26 +3,16 @@ package errorshandler
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/codex-team/hawk.collector/pkg/broker"
+	"github.com/codex-team/hawk.collector/pkg/sentry"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
 
-const SentryQueueName = "external/sentry"
-const CatcherType = "external/sentry"
-
-// helper for CORS
-func allowCORS(ctx *fasthttp.RequestCtx) {
-	h := &ctx.Response.Header
-	h.Set("Access-Control-Allow-Origin", "*")
-	h.Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	h.Set("Access-Control-Allow-Headers", "Content-Type, X-Sentry-Auth")
-	h.Set("Access-Control-Max-Age", "86400")
-}
-
-// HandleHTTP processes HTTP requests with JSON body
+// HandleSentry processes Sentry envelope HTTP requests.
+// Parses the envelope, skips non-event items (no rate-limit / plot impact),
+// transforms events to Hawk format, and publishes to errors/javascript or errors/default.
 func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
 		handler.ErrorsRejectedMessageTooLarge.Inc()
@@ -94,6 +84,21 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 	}
 	log.Debugf("Found project with ID %s for integration token %s", projectId, hawkToken)
 
+	// Parse + transform before rate-limiting so non-event-only envelopes
+	// do not affect rate limits or plots.
+	messages, err := sentry.ProcessEnvelope(sentryEnvelopeBody, projectId)
+	if err != nil {
+		log.Errorf("Error handling Sentry envelope: %v", err)
+		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Failed to process Sentry envelope"})
+		return
+	}
+
+	if len(messages) == 0 {
+		// Non-event items only (or empty after filtering) — skip silently
+		sendAnswerHTTP(ctx, ResponseMessage{200, false, "OK"})
+		return
+	}
+
 	projectLimits, ok := handler.AccountsMongoDBClient.GetProjectLimits(projectId)
 	if !ok {
 		log.Warnf("Project %s is not in the projects limits cache", projectId)
@@ -121,31 +126,45 @@ func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// convert message to JSON format
-	rawMessage := RawSentryMessage{Envelope: sentryEnvelopeBody}
-	jsonMessage, err := json.Marshal(rawMessage)
-	if err != nil {
-		log.Errorf("Message marshalling error: %v", err)
-		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
+	for _, msg := range messages {
+		payloadBytes, err := json.Marshal(msg.Payload)
+		if err != nil {
+			log.Errorf("Message marshalling error: %v", err)
+			sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize event payload"})
+			return
+		}
+
+		messageToSend := BrokerMessage{
+			Timestamp:   msg.Timestamp,
+			ProjectId:   msg.ProjectID,
+			Payload:     json.RawMessage(payloadBytes),
+			CatcherType: msg.CatcherType,
+		}
+		payloadToSend, err := json.Marshal(messageToSend)
+		if err != nil {
+			log.Errorf("Message marshalling error: %v", err)
+			sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize message"})
+			return
+		}
+
+		route := handler.determineQueue(msg.CatcherType)
+		brokerMessage := broker.Message{Payload: payloadToSend, Route: route}
+		log.Debugf("Send to queue: %s", brokerMessage)
+		handler.Broker.Chan <- brokerMessage
 	}
 
-	messageToSend := BrokerMessage{Timestamp: time.Now().Unix(), ProjectId: projectId, Payload: json.RawMessage(jsonMessage), CatcherType: CatcherType}
-	payloadToSend, err := json.Marshal(messageToSend)
-	if err != nil {
-		log.Errorf("Message marshalling error: %v", err)
-		sendAnswerHTTP(ctx, ResponseMessage{400, true, "Cannot serialize envelope"})
-	}
-
-	// send serialized message to a broker
-	brokerMessage := broker.Message{Payload: payloadToSend, Route: SentryQueueName}
-	log.Debugf("Send to queue: %s", brokerMessage)
-	handler.Broker.Chan <- brokerMessage
-
-	// increment processed errors counter
+	// One acceptance counter per HTTP request that yielded ≥1 event (same as before).
 	handler.ErrorsProcessed.Inc()
-
-	// record project metrics
 	handler.recordProjectMetrics(projectId, "events-accepted", true)
 
 	sendAnswerHTTP(ctx, ResponseMessage{200, false, "OK"})
+}
+
+// helper for CORS
+func allowCORS(ctx *fasthttp.RequestCtx) {
+	h := &ctx.Response.Header
+	h.Set("Access-Control-Allow-Origin", "*")
+	h.Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	h.Set("Access-Control-Allow-Headers", "Content-Type, X-Sentry-Auth")
+	h.Set("Access-Control-Max-Age", "86400")
 }
