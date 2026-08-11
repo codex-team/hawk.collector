@@ -1,6 +1,8 @@
 package sentry
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -113,6 +115,22 @@ func TestComposeBacktrace(t *testing.T) {
 		assert.Equal(t, 123, bt[0].Line)
 		assert.Equal(t, "test1.js", bt[1].File)
 		assert.Equal(t, 10, bt[1].Line)
+	})
+
+	t.Run("trims to 20 newest frames", func(t *testing.T) {
+		frames := make([]string, 0, 25)
+		for i := 0; i < 25; i++ {
+			frames = append(frames, fmt.Sprintf(`{"filename":"f%d.js","lineno":%d}`, i, i))
+		}
+		event := gjson.Parse(fmt.Sprintf(
+			`{"exception":{"values":[{"stacktrace":{"frames":[%s]}}]}}`,
+			strings.Join(frames, ","),
+		))
+		bt := ComposeBacktrace(event)
+		require.Len(t, bt, 20)
+		// After reverse, newest (f24) is first; oldest kept is f5
+		assert.Equal(t, "f24.js", bt[0].File)
+		assert.Equal(t, "f5.js", bt[19].File)
 	})
 }
 
