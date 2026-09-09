@@ -227,6 +227,23 @@ func TestProcessEnvelope_LengthPrefixedPayload(t *testing.T) {
 	assert.Equal(t, "error", messages[0].Payload.Type)
 }
 
+// TestProcessEnvelope_OneC_BareJSONBody reproduces a real report: 1C's Sentry
+// integration posts a bare JSON event object (old "store" API shape) directly
+// to the envelope endpoint, with no envelope header/item-header framing.
+// ParseEnvelope currently reads the whole body as the envelope header line
+// (there is no real newline in it — the \n are just JSON string escapes),
+// finds no items, and ProcessEnvelope silently returns zero messages with no
+// error. The collector answers 200 OK, and the event never reaches Hawk.
+func TestProcessEnvelope_OneC_BareJSONBody(t *testing.T) {
+	body := `{"event_id":"9961317b-5d63-409f-b231-f65b6657ae5b","timestamp":"2026-09-07T12:33:09","level":"error","logger":"1C","platform":"other","message":"Ошибка при вызове метода контекста (Получить)\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(259)}:Возврат Константы.Sentry_ДатаИВремяПоследнейОтправкиОшибки.Получить() + 1;\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(7)}:ДатаПоследнейОтправки = ПолучитьПоследнююДатуОтправки();\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(268)}:ОтправитьОшибкиИзЖурналаРегистрации();\n\n[ОшибкаВоВремяВыполненияВстроенногоЯзыка]\nпо причине:\nНарушение прав доступа!\n[НарушениеПравДоступа]","extra":{"application":"1CV8C","user":"2b85e012-b40b-4b57-bbe0-8996846d12c5","event":"_$PerformError$_","data":"","comment":"Ошибка при вызове метода контекста (Получить)\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(259)}:Возврат Константы.Sentry_ДатаИВремяПоследнейОтправкиОшибки.Получить() + 1;\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(7)}:ДатаПоследнейОтправки = ПолучитьПоследнююДатуОтправки();\n{ВнешняяОбработка.Сентри.Форма.Форма.Форма(268)}:ОтправитьОшибкиИзЖурналаРегистрации();\n\n[ОшибкаВоВремяВыполненияВстроенногоЯзыка]\nпо причине:\nНарушение прав доступа!\n[НарушениеПравДоступа]"},"tags":{"source":"journal"}}`
+
+	messages, err := ProcessEnvelope([]byte(body), "123")
+	require.NoError(t, err)
+	require.Len(t, messages, 1, "1C event sent as a bare JSON body must still be processed into one message")
+	assert.Equal(t, "error", messages[0].Payload.Type)
+	assert.Contains(t, messages[0].Payload.Title, "Ошибка при вызове метода контекста")
+}
+
 func joinLines(lines ...string) string {
 	out := ""
 	for i, line := range lines {
