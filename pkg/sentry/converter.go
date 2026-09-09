@@ -301,7 +301,13 @@ func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, p
 	sentAt := headers.Get("sent_at").String()
 	sentAtUnix, err := parseSentAtUnix(sentAt)
 	if err != nil {
-		return nil, err
+		// No (valid) envelope-level sent_at — e.g. a bare event body synthesized
+		// from Sentry's deprecated Store API shape has no envelope header at
+		// all. Fall back to the event's own "timestamp" field.
+		sentAtUnix, err = parseEventTimestampUnix(eventPayload.Get("timestamp"))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	isJs := IsJsSDK(eventPayload)
@@ -365,6 +371,35 @@ func parseSentAtUnix(sentAt string) (int64, error) {
 		return 0, fmt.Errorf("Invalid sent_at timestamp: %s", sentAt)
 	}
 	return t.Unix(), nil
+}
+
+// parseEventTimestampUnix is the fallback used when there is no envelope
+// sent_at to read (e.g. a bare event body has no envelope header at all —
+// see bareEventItem). It parses the event's own top-level "timestamp" field
+// instead, which may be a unix epoch number or an ISO 8601 string — with or
+// without a timezone offset (naive timestamps are treated as UTC, matching
+// what SDKs that omit an offset mean).
+func parseEventTimestampUnix(ts gjson.Result) (int64, error) {
+	if !ts.Exists() || ts.Type == gjson.Null {
+		return 0, fmt.Errorf("Event has no timestamp")
+	}
+	if ts.Type == gjson.Number {
+		return int64(ts.Num), nil
+	}
+
+	s := ts.String()
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05.000",
+		"2006-01-02T15:04:05",
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.Unix(), nil
+		}
+	}
+	return 0, fmt.Errorf("Invalid event timestamp: %s", s)
 }
 
 func firstNonEmpty(values ...string) string {

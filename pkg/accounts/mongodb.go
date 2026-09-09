@@ -61,6 +61,13 @@ func (m *AccountsMongoDBClient) CheckAvailability() bool {
 	return err == nil
 }
 
+// NewWithTokenCache builds an AccountsMongoDBClient with a pre-populated
+// token cache, skipping the MongoDB connection. For tests that exercise
+// handlers depending on GetValidToken without a live database.
+func NewWithTokenCache(validTokens map[string]string) *AccountsMongoDBClient {
+	return &AccountsMongoDBClient{validTokens: validTokens}
+}
+
 // GetValidToken returns the project ID for a given integration token
 func (client *AccountsMongoDBClient) GetValidToken(token string) (string, bool) {
 	projectID, ok := client.validTokens[token]
