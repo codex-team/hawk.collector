@@ -92,6 +92,8 @@ func FilterOutBinaryItems(rawEvent string) string {
 // Item payloads support both wire forms used by Sentry SDKs:
 //   - newline-delimited JSON (no "length" in the item header)
 //   - length-prefixed bytes (item header has numeric "length")
+//   - a bare event JSON body with no envelope framing at all (see bareEventItem)
+//
 // Replay items are skipped (same outcome as FilterOutBinaryItems).
 func ParseEnvelope(raw []byte) (*Envelope, error) {
 	data := skipLeadingNewlines(raw)
@@ -106,6 +108,7 @@ func ParseEnvelope(raw []byte) (*Envelope, error) {
 	if !json.Valid(headerBytes) {
 		return nil, fmt.Errorf("failed to parse envelope header: invalid JSON")
 	}
+	hadMoreLines := len(bytes.TrimSpace(rest)) > 0
 
 	items := make([]EnvelopeItem, 0)
 	isInReplayBlock := false
@@ -171,10 +174,52 @@ func ParseEnvelope(raw []byte) (*Envelope, error) {
 		})
 	}
 
+	// Some integrations (e.g. 1C) post a bare event JSON object — the shape of
+	// Sentry's deprecated Store API — straight to the envelope endpoint, with
+	// no envelope/item header framing. If the body was a single JSON line and
+	// no items were found, check whether that line is itself an event.
+	if len(items) == 0 && !hadMoreLines {
+		if item, ok := bareEventItem(headerBytes); ok {
+			return &Envelope{
+				Headers: json.RawMessage("{}"),
+				Items:   []EnvelopeItem{item},
+			}, nil
+		}
+	}
+
 	return &Envelope{
 		Headers: json.RawMessage(headerBytes),
 		Items:   items,
 	}, nil
+}
+
+// eventBodyIndicatorFields are keys used to tell a bare event body apart from
+// a real envelope header (which only has event_id/sent_at/dsn/sdk/trace):
+// any of these means "this JSON is an event". Reuses addonFields plus a few
+// more event-only fields not in that list.
+var eventBodyIndicatorFields = append(append([]string{}, addonFields...),
+	"exception", "breadcrumbs", "contexts", "logger", "culprit", "user",
+)
+
+// bareEventItem recognizes a request body that is a single bare JSON event
+// object (e.g. Sentry's deprecated Store API shape) rather than an envelope
+// header, and wraps it as a synthetic "event" item.
+func bareEventItem(headerBytes []byte) (EnvelopeItem, bool) {
+	var headerObj map[string]interface{}
+	if err := json.Unmarshal(headerBytes, &headerObj); err != nil {
+		return EnvelopeItem{}, false
+	}
+
+	for _, field := range eventBodyIndicatorFields {
+		if _, ok := headerObj[field]; ok {
+			return EnvelopeItem{
+				Header:  map[string]interface{}{"type": "event"},
+				Payload: json.RawMessage(headerBytes),
+			}, true
+		}
+	}
+
+	return EnvelopeItem{}, false
 }
 
 // readItemPayload reads the payload for one envelope item.
