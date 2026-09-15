@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -309,6 +310,7 @@ func TransformToHawkFormat(envelopeHeaders json.RawMessage, item EnvelopeItem, p
 			return nil, err
 		}
 	}
+	sentAtUnix = sanitizeBrokerTimestamp(sentAtUnix, time.Now())
 
 	isJs := IsJsSDK(eventPayload)
 	workerType := WorkerTypeDefault
@@ -400,6 +402,56 @@ func parseEventTimestampUnix(ts gjson.Result) (int64, error) {
 		}
 	}
 	return 0, fmt.Errorf("Invalid event timestamp: %s", s)
+}
+
+const (
+	// maxFutureTimestampSkew rejects client clocks far ahead of the server
+	// (e.g. year 2056 payloads that overflow GraphQL Int / break daily grouping).
+	maxFutureTimestampSkew = 24 * time.Hour
+	// maxPastTimestampSkew still allows historical/backfilled events.
+	maxPastTimestampSkew = 10 * 365 * 24 * time.Hour
+	// unixTimestampMillisThreshold: values above this are almost certainly ms, not seconds.
+	unixTimestampMillisThreshold int64 = 1_000_000_000_000
+)
+
+// sanitizeBrokerTimestamp normalizes client-supplied unix times before they
+// become BrokerMessage.timestamp. Clamps absurd/future/past values into
+// [now-maxPast, now+maxFuture] so grouper does not persist year-2056 dailyEvents
+// (GraphQL Int overflow) while keeping a deterministic bound of the original value.
+func sanitizeBrokerTimestamp(ts int64, now time.Time) int64 {
+	original := ts
+
+	if ts > unixTimestampMillisThreshold {
+		ts = ts / 1000
+	}
+
+	nowUnix := now.Unix()
+	maxFuture := nowUnix + int64(maxFutureTimestampSkew.Seconds())
+	minPast := nowUnix - int64(maxPastTimestampSkew.Seconds())
+
+	if ts > maxFuture {
+		log.Warnf(
+			"Clamping out-of-range Sentry event timestamp %d (normalized %d) to max %d",
+			original,
+			ts,
+			maxFuture,
+		)
+
+		return maxFuture
+	}
+
+	if ts < minPast {
+		log.Warnf(
+			"Clamping out-of-range Sentry event timestamp %d (normalized %d) to min %d",
+			original,
+			ts,
+			minPast,
+		)
+
+		return minPast
+	}
+
+	return ts
 }
 
 func firstNonEmpty(values ...string) string {
