@@ -241,7 +241,7 @@ func TestSanitizeBrokerTimestamp(t *testing.T) {
 func TestTransformToHawkFormat_ClampsFarFutureTimestamp(t *testing.T) {
 	headers := json.RawMessage(`{}`)
 	item := EnvelopeItem{
-		Header:  json.RawMessage(`{"type":"event"}`),
+		Header:  map[string]interface{}{"type": "event"},
 		Payload: []byte(`{"timestamp":2736250836,"message":"future clock","level":"error"}`),
 	}
 
