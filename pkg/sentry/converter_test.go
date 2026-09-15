@@ -1,9 +1,11 @@
 package sentry
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -203,4 +205,53 @@ func TestIsJsSDK(t *testing.T) {
 	assert.True(t, IsJsSDK(gjson.Parse(`{"sdk":{"name":"sentry.javascript.react"}}`)))
 	assert.False(t, IsJsSDK(gjson.Parse(`{"sdk":{"name":"python"}}`)))
 	assert.False(t, IsJsSDK(gjson.Parse(`{}`)))
+}
+
+func TestSanitizeBrokerTimestamp(t *testing.T) {
+	now := time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)
+	nowUnix := now.Unix()
+	maxFuture := nowUnix + int64((24 * time.Hour).Seconds())
+	minPast := nowUnix - int64((10 * 365 * 24 * time.Hour).Seconds())
+
+	t.Run("keeps reasonable timestamp", func(t *testing.T) {
+		assert.Equal(t, nowUnix-3600, sanitizeBrokerTimestamp(nowUnix-3600, now))
+	})
+
+	t.Run("clamps far-future timestamp to maxFuture", func(t *testing.T) {
+		farFuture := int64(2736250836) // 2056-09-15
+		assert.Equal(t, maxFuture, sanitizeBrokerTimestamp(farFuture, now))
+	})
+
+	t.Run("clamps too-old timestamp to minPast", func(t *testing.T) {
+		tooOld := nowUnix - int64((11 * 365 * 24 * time.Hour).Seconds())
+		assert.Equal(t, minPast, sanitizeBrokerTimestamp(tooOld, now))
+	})
+
+	t.Run("converts millisecond timestamps", func(t *testing.T) {
+		ms := (nowUnix - 60) * 1000
+		assert.Equal(t, nowUnix-60, sanitizeBrokerTimestamp(ms, now))
+	})
+
+	t.Run("clamps far-future sent as milliseconds to maxFuture", func(t *testing.T) {
+		ms := int64(2736250836) * 1000
+		assert.Equal(t, maxFuture, sanitizeBrokerTimestamp(ms, now))
+	})
+}
+
+func TestTransformToHawkFormat_ClampsFarFutureTimestamp(t *testing.T) {
+	headers := json.RawMessage(`{}`)
+	item := EnvelopeItem{
+		Header:  json.RawMessage(`{"type":"event"}`),
+		Payload: []byte(`{"timestamp":2736250836,"message":"future clock","level":"error"}`),
+	}
+
+	before := time.Now().Unix()
+	msg, err := TransformToHawkFormat(headers, item, "project-1")
+	after := time.Now().Unix()
+
+	require.NoError(t, err)
+	require.NotNil(t, msg)
+	assert.GreaterOrEqual(t, msg.Timestamp, before)
+	assert.LessOrEqual(t, msg.Timestamp, after+int64((24*time.Hour).Seconds()))
+	assert.Equal(t, "future clock", msg.Payload.Title)
 }
