@@ -14,13 +14,6 @@ import (
 // Parses the envelope, skips non-event items (no rate-limit / plot impact),
 // transforms events to Hawk format, and publishes to errors/javascript or errors/default.
 func (handler *Handler) HandleSentry(ctx *fasthttp.RequestCtx) {
-	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
-		handler.ErrorsRejectedMessageTooLarge.Inc()
-		log.Warnf("Incoming request with size %d", ctx.Request.Header.ContentLength())
-		sendAnswerHTTP(ctx, ResponseMessage{Code: 400, Error: true, Message: "Request is too large"})
-		return
-	}
-
 	allowCORS(ctx)
 	if string(ctx.Method()) == fasthttp.MethodOptions {
 		ctx.SetStatusCode(fasthttp.StatusNoContent) // 204

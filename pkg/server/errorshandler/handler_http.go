@@ -11,17 +11,6 @@ import (
 
 // HandleHTTP processes HTTP requests with JSON body
 func (handler *Handler) HandleHTTP(ctx *fasthttp.RequestCtx) {
-	if ctx.Request.Header.ContentLength() > handler.MaxErrorCatcherMessageSize {
-		handler.ErrorsRejectedMessageTooLarge.Inc()
-		log.Warnf("Incoming request with size %d", ctx.Request.Header.ContentLength())
-		sendAnswerHTTP(ctx, ResponseMessage{
-			Code:    400,
-			Error:   true,
-			Message: "Request is too large",
-		})
-		return
-	}
-
 	// process raw body via unified message handler
 	body := ctx.PostBody()
 	log.Debugf("Headers: %s\nBody: %s", ctx.Request.Header.String(), body)
