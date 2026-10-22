@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,6 +62,10 @@ func (s *Server) Run() {
 
 		// limit HTTP body size
 		MaxRequestBodySize: s.Config.MaxRequestBodySize,
+
+		// reject oversized error requests before their body is read into memory
+		HeaderReceived: s.headerReceived,
+		ErrorHandler:   s.errorHandler,
 	}
 
 	// handler of error messages via HTTP and websocket protocols
@@ -88,6 +93,32 @@ func (s *Server) Run() {
 
 	err := fastHTTPServer.ListenAndServe(s.Config.Listen)
 	cmd.FailOnError(err, "Server run error")
+}
+
+// headerReceived applies the error message size limit to every path except /release
+func (s *Server) headerReceived(header *fasthttp.RequestHeader) fasthttp.RequestConfig {
+	path := header.RequestURI()
+	if i := bytes.IndexByte(path, '?'); i >= 0 {
+		path = path[:i]
+	}
+
+	if string(path) == "/release" {
+		return fasthttp.RequestConfig{}
+	}
+
+	return fasthttp.RequestConfig{MaxRequestBodySize: s.Config.MaxErrorCatcherMessageSize}
+}
+
+// errorHandler answers requests that fasthttp failed to read
+func (s *Server) errorHandler(ctx *fasthttp.RequestCtx, err error) {
+	if errors.Is(err, fasthttp.ErrBodyTooLarge) {
+		s.ErrorsHandler.ErrorsRejectedMessageTooLarge.Inc()
+		log.Warnf("Incoming request to %s with size %d", ctx.Request.Header.RequestURI(), ctx.Request.Header.ContentLength())
+		ctx.Error("Request is too large", fasthttp.StatusRequestEntityTooLarge)
+		return
+	}
+
+	ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
 }
 
 // global fasthttp entrypoint
