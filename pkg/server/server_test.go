@@ -16,7 +16,7 @@ import (
 
 func TestBodyLimitByPath(t *testing.T) {
 	s := &Server{
-		Config: cmd.Config{MaxErrorCatcherMessageSize: 1024},
+		Config: cmd.Config{MaxRequestBodySize: 1024 * 1024, MaxErrorCatcherMessageSize: 1024},
 		ErrorsHandler: errorshandler.Handler{
 			ErrorsRejectedMessageTooLarge: prometheus.NewCounter(prometheus.CounterOpts{Name: "test_rejected"}),
 		},
@@ -46,8 +46,9 @@ func TestBodyLimitByPath(t *testing.T) {
 	}
 
 	assert.Equal(t, fasthttp.StatusOK, post("/", 1024))
+	assert.Equal(t, fasthttp.StatusOK, post("/release", 4096))
 	assert.Equal(t, fasthttp.StatusRequestEntityTooLarge, post("/", 1025))
 	assert.Equal(t, fasthttp.StatusRequestEntityTooLarge, post("/api/0/envelope/?sentry_key=x", 1025))
 	assert.Equal(t, fasthttp.StatusOK, post("/release?x=1", 4096))
-	assert.Equal(t, 2, handled)
+	assert.Equal(t, 3, handled)
 }
