@@ -102,8 +102,9 @@ func (s *Server) headerReceived(header *fasthttp.RequestHeader) fasthttp.Request
 		path = path[:i]
 	}
 
+	// fasthttp keeps the previous request's limit on a keep-alive connection, so set it every time
 	if string(path) == "/release" {
-		return fasthttp.RequestConfig{}
+		return fasthttp.RequestConfig{MaxRequestBodySize: s.Config.MaxRequestBodySize}
 	}
 
 	return fasthttp.RequestConfig{MaxRequestBodySize: s.Config.MaxErrorCatcherMessageSize}
